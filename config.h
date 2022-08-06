@@ -15,7 +15,6 @@ constexpr unsigned dialog_button_margin(400);
 class Conf {
 public:
     static unsigned world_size;
-    static void define_random_exp();
     static void set_world_size(unsigned wsize);
 };
 
