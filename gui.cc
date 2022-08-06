@@ -639,7 +639,6 @@ void SimulationWindow::on_button_clear_clicked() {
 }
 
 void SimulationWindow::on_button_random_clicked() {
-    Conf::define_random_exp();
     SimulationWindow::on_button_clear_clicked();
 
     // Randomly fill half of the grid
