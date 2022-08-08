@@ -1,3 +1,23 @@
+/************************************************************************
+
+*	Game of Life -- GUI with various options and view controls
+*	Copyright (C) 2022 Cyprien Lacassagne
+
+*	This program is free software: you can redistribute it and/or modify
+*	it under the terms of the GNU General Public License as published by
+*	the Free Software Foundation, either version 3 of the License, or
+*	(at your option) any later version.
+
+*	This program is distributed in the hope that it will be useful,
+*	but WITHOUT ANY WARRANTY; without even the implied warranty of
+*	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*	GNU General Public License for more details.
+
+*	You should have received a copy of the GNU General Public License
+*	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*************************************************************************/
+
 #include "simulation.h"
 #include "gui.h"
 #include "config.h"
@@ -23,7 +43,7 @@ int main(int argc, char * argv[]) {
 	// to provide a fresh new random generation each time the program is run
 	srand((unsigned) time(0));
 
-	auto app = Gtk::Application::create(argc, argv, "ch.epfl.gitlab.clacassa.gameoflife_simulation");
+	auto app = Gtk::Application::create(argc, argv, "com.github.clacassa.Game-of-Life");
 
 	// Uncomment this if you want the application to start in dark mode - run make to take effect
 		// g_object_set(gtk_settings_get_default(),
