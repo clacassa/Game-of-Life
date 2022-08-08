@@ -24,7 +24,10 @@
 #include <gtkmm.h>
 
 struct Frame{
-    double xMin, xMax, yMin, yMax;
+    double xMin;
+    unsigned xMax;
+    double yMin;
+    unsigned yMax;
     double asp, height, width;
 };
 

@@ -31,7 +31,7 @@
 
 int main(int argc, char * argv[]) {
 
-	std::string filename;
+	std::string filename("");
 	if (argc == 2) {
 		filename = argv[1];
 		read_file(filename);

@@ -41,6 +41,7 @@ static unsigned z_ratio(100);
 static unsigned _theme_(1);
 static bool grid_shown(false);
 static bool accept_show_grid(false);
+static bool first_zoom(true);
 
 void set_default_frame() {
     default_frame.xMin = -1;
@@ -203,8 +204,8 @@ SimulationWindow::SimulationWindow(std::string __filename)
     timeout_value(50),
     filename(__filename),
     frame_surface(default_frame.xMax*default_frame.xMax),
-    x(std::to_string(default_frame.xMax / 2)),
-    y(std::to_string(default_frame.yMax / 2))
+    x(std::to_string(default_frame.xMax / 2.0)),
+    y(std::to_string(default_frame.yMax / 2.0))
     {
         m_Box.set_border_width(10);
         m_GuiBox.set_border_width(5);
@@ -641,7 +642,6 @@ void SimulationWindow::on_button_reset_clicked() {
 void SimulationWindow::on_button_clear_clicked() {
     init();
     m_Area.refresh();
-    set_default_frame();
     this->set_title("Game of Life");
     m_Label_Info.set_text("Generation: ");
     filename = "";
@@ -801,6 +801,27 @@ void SimulationWindow::on_button_test_clicked() {
 }
 
 void SimulationWindow::on_button_zoom_in_clicked() {
+    // If first time the user zooms in, show how to navigate throughout 
+    // the world
+    if (first_zoom) {
+        std::string msg("To move the frame, " \
+                        "you can use 4 differents keys, for the four directions:\n\n" \
+                        "'H' to go left\n'J' to go down\n'K' to go up, and\n'L' to go right");
+        Gtk::MessageDialog nav_com_dial(msg, true, Gtk::MESSAGE_INFO, Gtk::BUTTONS_OK, false);
+        // Font options
+        if (_theme_) {
+            nav_com_dial.set_message("<span size='large' foreground='#000099' letter_spacing='1024'>"
+                            + msg + "</span>", true);
+        }else {
+            nav_com_dial.set_message("<span size='large' foreground='#C0C0C0' letter_spacing='1024'>"
+                            + msg + "</span>", true);
+        }
+        std::vector<Gtk::Widget*> children = nav_com_dial.get_action_area()->get_children();
+        children[0]->set_margin_left(dialog_button_margin);
+        nav_com_dial.set_transient_for(*this);
+        nav_com_dial.run();
+        first_zoom = false;
+    }
 
     // Increase the zoom level and decrease the view angle (z ratio)
     zoom += 10;
@@ -809,8 +830,8 @@ void SimulationWindow::on_button_zoom_in_clicked() {
     m_LabelZoom.set_text(std::to_string(zoom) + "%");
 
     // Get the center of the frame
-    x = std::to_string(default_frame.xMax / 2);
-    y = std::to_string(default_frame.yMax / 2);
+    x = std::to_string(default_frame.xMax / 2.0);
+    y = std::to_string(default_frame.yMax / 2.0);
 
     // Update the label and erase superflux zeros
     x.erase(x.find_last_not_of('0'), std::string::npos);
@@ -833,8 +854,8 @@ void SimulationWindow::on_button_zoom_out_clicked() {
     m_LabelZoom.set_text(std::to_string(zoom) + "%");
 
     // Get the center of the frame
-    x = std::to_string(default_frame.xMax / 2);
-    y = std::to_string(default_frame.yMax / 2);
+    x = std::to_string(default_frame.xMax / 2.0);
+    y = std::to_string(default_frame.yMax / 2.0);
 
     // Update the label and erase superflux zeros
     x.erase(x.find_last_not_of('0'), std::string::npos);
@@ -854,12 +875,11 @@ void SimulationWindow::on_button_reset_zoom_clicked() {
     m_LabelZoom.set_text(std::to_string(zoom) + "%");
 
     // Reset the zoom level of the frame
-    default_frame.xMax = Conf::world_size;
-    default_frame.yMax = Conf::world_size;
+    set_default_frame();
 
     // Get the center of the frame
-    x = std::to_string(default_frame.xMax / 2);
-    y = std::to_string(default_frame.yMax / 2);
+    x = std::to_string(default_frame.xMax / 2.0);
+    y = std::to_string(default_frame.yMax / 2.0);
 
     // Update the label and erase superflux zeros
     x.erase(x.find_last_not_of('0'), std::string::npos);
@@ -875,8 +895,8 @@ void SimulationWindow::on_leftarrow_pressed() {
         default_frame.xMax -= 1;
 
         // Get the center of the frame
-        x = std::to_string(default_frame.xMax / 2);
-        y = std::to_string(default_frame.yMax / 2);
+        x = std::to_string(default_frame.xMax / 2.0);
+        y = std::to_string(default_frame.yMax / 2.0);
 
         // Update the label and erase superflux zeros
         x.erase(x.find_last_not_of('0'), std::string::npos);
@@ -894,8 +914,8 @@ void SimulationWindow::on_rightarrow_pressed() {
         default_frame.xMax += 1;
 
         // Get the center of the frame
-        x = std::to_string(default_frame.xMax / 2);
-        y = std::to_string(default_frame.yMax / 2);
+        x = std::to_string(default_frame.xMax / 2.0);
+        y = std::to_string(default_frame.yMax / 2.0);
 
         // Update the label and erase superflux zeros
         x.erase(x.find_last_not_of('0'), std::string::npos);
@@ -913,8 +933,8 @@ void SimulationWindow::on_uparrow_pressed() {
         default_frame.yMax += 1;
 
         // Get the center of the frame
-        x = std::to_string(default_frame.xMax / 2);
-        y = std::to_string(default_frame.yMax / 2);
+        x = std::to_string(default_frame.xMax / 2.0);
+        y = std::to_string(default_frame.yMax / 2.0);
 
         // Update the lable and erase superflux zeros
         x.erase(x.find_last_not_of('0'), std::string::npos);
@@ -932,8 +952,8 @@ void SimulationWindow::on_downarrow_pressed() {
         default_frame.yMax -= 1;
 
         // Get the center of the frame
-        x = std::to_string(default_frame.xMax / 2);
-        y = std::to_string(default_frame.yMax / 2);
+        x = std::to_string(default_frame.xMax / 2.0);
+        y = std::to_string(default_frame.yMax / 2.0);
 
         // Update the label and erase superflux zeros
         x.erase(x.find_last_not_of('0'), std::string::npos);
@@ -1186,7 +1206,7 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
 
             std::cout << x << "    " << y << "\n";
 
-            if (x < Conf::world_size && y < Conf::world_size) {
+            if (x < (int)Conf::world_size && y < (int)Conf::world_size) {
 
                 // A left click gives birth to a new cell
                 if (event->button == 1) {

@@ -45,8 +45,8 @@ static bool past_stable(false);
 
 enum reading_State { WORLD_SIZE, NB_CELLS, COORDINATES, END, OK };
 static int state(WORLD_SIZE);
-static int i(0), total(0);
-static int x(0), y(0), w_size(0);
+static unsigned i(0), total(0);
+static unsigned x(0), y(0), w_size(0);
 static int error_id(0);
 static bool success(true);
 
@@ -78,7 +78,10 @@ bool read_file(std::string filename) {
         if (success) {
             error_id = 0;
             return true;
-        }else success = true;
+        }else {
+            success = true;
+            return false;
+        }
     }else {
         error(READING_OPENING);
         return false;
