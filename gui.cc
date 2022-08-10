@@ -174,7 +174,7 @@ SimulationWindow::SimulationWindow(std::string __filename)
     showgridMi("Show grid"),
     darkmode("Dark theme"),
     experimentMi("Experiment"),
-    simsizeMi("Simulation"),
+    simsizeMi("World size"),
     incrsizeMi("Extend"),
     decrsizeMi("Shrink"),
     helpMi("Help"),
@@ -567,6 +567,12 @@ void SimulationWindow::zoom_frame() {
     default_frame.yMin = yMinNew;
 }
 
+void SimulationWindow::updt_statusbar_labels() {
+    x = std::to_string((default_frame.xMax + (int)default_frame.xMin) / 2);
+    y = std::to_string((default_frame.yMax + (int)default_frame.yMin) / 2);
+    m_LabelCoordinates.set_text("x : " + x + "    y : " + y);
+}
+
 void set_dark_theme_on() {
     _theme_ = 0;
 }
@@ -659,7 +665,7 @@ void SimulationWindow::on_button_clear_clicked() {
 }
 
 void SimulationWindow::on_button_random_clicked() {
-    SimulationWindow::on_button_clear_clicked();
+    on_button_clear_clicked();
 
     // Randomly fill half of the grid
     unsigned rand_x, rand_y;
@@ -709,14 +715,7 @@ void SimulationWindow::on_button_open_clicked() {
 
             set_default_frame();
             accept_show_grid = false;
-            // Get the center of the frame
-            x = std::to_string((default_frame.xMax - default_frame.xMin) / 2);
-            y = std::to_string((default_frame.yMax - default_frame.yMin) / 2);
-
-            // Update the label and erase superflux zeros
-            x.erase(x.find_last_not_of('0'), std::string::npos);
-            y.erase(x.find_last_not_of('0'), std::string::npos);
-            m_LabelCoordinates.set_text("x : " + x + "    y : " + y);
+            updt_statusbar_labels();
 
             m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "
                        + std::to_string(Conf::world_size));
@@ -828,15 +827,7 @@ void SimulationWindow::on_button_zoom_in_clicked() {
     z_ratio -= 10;
     zoom_frame();
     m_LabelZoom.set_text(std::to_string(zoom) + "%");
-
-    // Get the center of the frame
-    x = std::to_string(default_frame.xMax / 2.0);
-    y = std::to_string(default_frame.yMax / 2.0);
-
-    // Update the label and erase superflux zeros
-    x.erase(x.find_last_not_of('0'), std::string::npos);
-    y.erase(x.find_last_not_of('0'), std::string::npos);
-    m_LabelCoordinates.set_text("x : " + x + "    y : " +y);
+    updt_statusbar_labels();
 
     if (z_ratio == 0) {
         zoominMi.set_sensitive(false);
@@ -852,15 +843,7 @@ void SimulationWindow::on_button_zoom_out_clicked() {
     z_ratio += 10;
     zoom_frame();
     m_LabelZoom.set_text(std::to_string(zoom) + "%");
-
-    // Get the center of the frame
-    x = std::to_string(default_frame.xMax / 2.0);
-    y = std::to_string(default_frame.yMax / 2.0);
-
-    // Update the label and erase superflux zeros
-    x.erase(x.find_last_not_of('0'), std::string::npos);
-    y.erase(x.find_last_not_of('0'), std::string::npos);
-    m_LabelCoordinates.set_text("x : " + x + "    y : " +y);
+    updt_statusbar_labels();
 
     if (zoom == 100) {
         zoomoutMi.set_sensitive(false);
@@ -876,15 +859,7 @@ void SimulationWindow::on_button_reset_zoom_clicked() {
 
     // Reset the zoom level of the frame
     set_default_frame();
-
-    // Get the center of the frame
-    x = std::to_string(default_frame.xMax / 2.0);
-    y = std::to_string(default_frame.yMax / 2.0);
-
-    // Update the label and erase superflux zeros
-    x.erase(x.find_last_not_of('0'), std::string::npos);
-    y.erase(y.find_last_not_of('0'), std::string::npos);
-    m_LabelCoordinates.set_text("x : " + x + "    y : " + y);
+    updt_statusbar_labels();
 }
 
 void SimulationWindow::on_leftarrow_pressed() {
@@ -893,15 +868,7 @@ void SimulationWindow::on_leftarrow_pressed() {
         // Translate the frame to the left
         default_frame.xMin -= 1;
         default_frame.xMax -= 1;
-
-        // Get the center of the frame
-        x = std::to_string(default_frame.xMax / 2.0);
-        y = std::to_string(default_frame.yMax / 2.0);
-
-        // Update the label and erase superflux zeros
-        x.erase(x.find_last_not_of('0'), std::string::npos);
-        y.erase(y.find_last_not_of('0'), std::string::npos);
-        m_LabelCoordinates.set_text("x : " + x + "    y : " +y);
+        updt_statusbar_labels();
         m_Area.refresh();
     }
 }
@@ -913,14 +880,7 @@ void SimulationWindow::on_rightarrow_pressed() {
         default_frame.xMin += 1;
         default_frame.xMax += 1;
 
-        // Get the center of the frame
-        x = std::to_string(default_frame.xMax / 2.0);
-        y = std::to_string(default_frame.yMax / 2.0);
-
-        // Update the label and erase superflux zeros
-        x.erase(x.find_last_not_of('0'), std::string::npos);
-        y.erase(y.find_last_not_of('0'), std::string::npos);
-        m_LabelCoordinates.set_text("x : " + x + "    y : " +y);
+        updt_statusbar_labels();
         m_Area.refresh();
     }
 }
@@ -932,14 +892,7 @@ void SimulationWindow::on_uparrow_pressed() {
         default_frame.yMin += 1;
         default_frame.yMax += 1;
 
-        // Get the center of the frame
-        x = std::to_string(default_frame.xMax / 2.0);
-        y = std::to_string(default_frame.yMax / 2.0);
-
-        // Update the lable and erase superflux zeros
-        x.erase(x.find_last_not_of('0'), std::string::npos);
-        y.erase(y.find_last_not_of('0'), std::string::npos);
-        m_LabelCoordinates.set_text("x : " + x + "    y : " +y);
+        updt_statusbar_labels();
         m_Area.refresh();
     }
 }
@@ -951,14 +904,7 @@ void SimulationWindow::on_downarrow_pressed() {
         default_frame.yMin -= 1;
         default_frame.yMax -= 1;
 
-        // Get the center of the frame
-        x = std::to_string(default_frame.xMax / 2.0);
-        y = std::to_string(default_frame.yMax / 2.0);
-
-        // Update the label and erase superflux zeros
-        x.erase(x.find_last_not_of('0'), std::string::npos);
-        y.erase(y.find_last_not_of('0'), std::string::npos);
-        m_LabelCoordinates.set_text("x : " + x + "    y : " +y);
+        updt_statusbar_labels();
         m_Area.refresh();
     }
 }

@@ -67,6 +67,7 @@ public:
     void set_compliant_theme();
 protected:
     void zoom_frame();
+    void updt_statusbar_labels();
 
     void on_button_open_clicked();
     void on_button_save_clicked();
