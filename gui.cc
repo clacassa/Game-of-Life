@@ -204,8 +204,8 @@ SimulationWindow::SimulationWindow(std::string __filename)
     timeout_value(50),
     filename(__filename),
     frame_surface(default_frame.xMax*default_frame.xMax),
-    x(std::to_string(default_frame.xMax / 2.0)),
-    y(std::to_string(default_frame.yMax / 2.0))
+    x(std::to_string(default_frame.xMax / 2)),
+    y(std::to_string(default_frame.yMax / 2))
     {
         m_Box.set_border_width(10);
         m_GuiBox.set_border_width(5);
@@ -424,8 +424,6 @@ SimulationWindow::SimulationWindow(std::string __filename)
         m_LabelZoom.set_halign(Gtk::ALIGN_END);
         m_LabelZoom.set_hexpand(false);
         // - for the coordinates
-        x.erase(x.find_last_not_of('0') + 2, std::string::npos);
-        y.erase(y.find_last_not_of('0') + 2, std::string::npos);
         m_LabelCoordinates.set_text("x : " + x + "    y : " +y);
         m_LabelCoordinates.set_halign(Gtk::ALIGN_END);
         m_LabelCoordinates.set_hexpand(false);
@@ -568,8 +566,8 @@ void SimulationWindow::zoom_frame() {
 }
 
 void SimulationWindow::updt_statusbar_labels() {
-    x = std::to_string((default_frame.xMax + (int)default_frame.xMin) / 2);
-    y = std::to_string((default_frame.yMax + (int)default_frame.yMin) / 2);
+    x = std::to_string((default_frame.xMax + (int)default_frame.xMin) / 2 + 1);
+    y = std::to_string((default_frame.yMax + (int)default_frame.yMin) / 2 + 1);
     m_LabelCoordinates.set_text("x : " + x + "    y : " + y);
 }
 
