@@ -1,0 +1,35 @@
+
+Name       | Shortcut| Description
+
+Start/Stop | 1       | Starts/Stops the simulation.
+           |         | You can change the speed via the scale widget.
+Step       | 2       | Performs one single update.
+Clear      | 3       | Clears the board and prepare a new simulation for being run.
+Random     | 4       | Randomly fills half the surface of the board with alive cells.
+Reset      | 5       | When a file is open and modified, cancels any change.
+Glider gun | 6       | Spawns a gun that eternally launches gliders.
+Spacefiller| 7       | Spawns a special figure that fills the board. 
+Open       | Ctrl+O  | Opens a file and initalizes the simulation with its content.
+Save as    | Ctrl+S  | Saves the current state of the simulation in a text file, 
+           |         | which can then be opened to resume the simulation.
+Quit       | Ctrl+Q  | Quits the application.
+Zoom in    | Ctrl++  | Zooms in by 10%.
+Zoom out   | Ctrl+-  | Zooms out by 10%.
+Reset zoom | Ctrl+0  | Resets the zoom level to 0 (100%).
+Show grid  |         | Displays a light gray grid over the board.
+           |         | It can help spawning alive cells on the board with the mouse.
+Dark side  |         | Switches to dark theme when ticked, to light theme when unticked.
+Experiment | Ctrl+T  | Enables/Disables the experiment mode. In this mode,
+           |         | the simulation stops as soon as the evolution stabilizes.
+           | h       | Moves the view frame left
+           | j       | Moves the view frame up
+           | k       | Moves the view frame down
+           | l       | Moves the view frame right
+
+World size
+=> Extend  | Ctrl+PageUp  | Increases the size of the board (virtual world) by 50px.
+=> Shrink  | Ctrl+PageDown| Decreases the size of the board by 50px.
+
+Refresh rate|        | Lets you change the speed of the simulation.
+            |        | The smaller the rate, the higher the fps. 
+            |        | Be sure to stop and restart the simulation for the change to take effect.
