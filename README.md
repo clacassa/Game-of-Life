@@ -7,7 +7,9 @@ Please compile the source code instead of running the executable.
 The latter doesn't have the last fixes and updates.  
 I put it here just for people who don't have compilation tools.  
 However everything will be sync between exe and source, once I wil have
-published a release.
+published a release.  
+For the moment, the gui is mainly made and thought for Windows users.  
+I'm working on making it the slightest bit portable.  
 
 ## Installation
 
