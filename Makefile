@@ -10,7 +10,7 @@ EXEDIR = ./bin
 all: $(EXEDIR)/$(OUT)
 
 $(EXEDIR)/$(OUT): $(OFILES)
-	$(CXX) $(CXXFLAGS) $(LINKING) $(OFILES) -o $@ $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $(LINKING) $(OFILES) ./res/my.res -o $@ $(LDLIBS)
 
 main.o: main.cc simulation.h gui.h
 	$(CXX) $(CXXFLAGS) $(LINKING) -c $< -o $@ $(LINKING)
