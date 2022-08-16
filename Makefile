@@ -7,10 +7,17 @@ CXXFILES = main.cc simulation.cc gui.cc graphic.cc config.cc
 OFILES = $(CXXFILES:.cc=.o)
 EXEDIR = ./bin
 
+# On Windows, start the program without a console in the background
+# and link an icon to it
+ifeq ($(OS),Windows_NT)
+CXXFLAGS += -mwindows
+OFILES += ./res/my.res
+endif
+
 all: $(EXEDIR)/$(OUT)
 
 $(EXEDIR)/$(OUT): $(OFILES)
-	$(CXX) $(CXXFLAGS) $(LINKING) $(OFILES) ./res/my.res -o $@ $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $(LINKING) $(OFILES) -o $@ $(LDLIBS)
 
 main.o: main.cc simulation.h gui.h
 	$(CXX) $(CXXFLAGS) $(LINKING) -c $< -o $@ $(LINKING)
@@ -29,4 +36,4 @@ config.o: config.cc config.h
 
 .PHONY: clean
 clean:
-	@rm -f *.o *.exe  $(EXEDIR)/$(OUT) *.cc~ *.h~ projet
+	@rm -f *.o *.exe  $(EXEDIR)/$(OUT) *.cc~ *.h~
