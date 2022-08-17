@@ -38,7 +38,7 @@ unsigned get_error_id();
 void display();
 void init();
 bool update(Mode mode = NORMAL);
-void adjust_zoom();
+void adjust_bool_grid();
 
 void draw_canon_planeur(unsigned x, unsigned y);
 void erase_canon_planeur(unsigned x, unsigned y);

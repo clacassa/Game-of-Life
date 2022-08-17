@@ -33,8 +33,10 @@ int main(int argc, char * argv[]) {
 
 	std::string filename("");
 	if (argc == 2) {
-		filename = argv[1];
-		read_file(filename);
+		if (std::string(argv[1]).find_first_of("-") != 0) {
+			filename = argv[1];
+			if (!read_file(filename)) filename = "";
+		}
 	}
 	argc = 1;
 	set_default_frame();
@@ -45,10 +47,10 @@ int main(int argc, char * argv[]) {
 
 	auto app = Gtk::Application::create(argc, argv, "com.github.clacassa.Game-of-Life");
 
-	// Uncomment this if you want the application to start in dark mode - run make to take effect
-		// g_object_set(gtk_settings_get_default(),
-    	// 		"gtk-application-prefer-dark-theme", TRUE, NULL);
-		// set_dark_theme_on();
+	// Uncomment this if you want the application to start in dark mode - recompile to take effect
+		g_object_set(gtk_settings_get_default(),
+    			"gtk-application-prefer-dark-theme", TRUE, NULL);
+		set_dark_theme_on();
 	// Uncomment this if you want the application to start in dark mode
 
 	// Set default properties for the main window

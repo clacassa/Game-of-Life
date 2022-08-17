@@ -21,6 +21,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+// #define FADE_EFFECT_OPERATIONAL // In development
 #include <iostream>
 
 //constexpr unsigned world_size(300);

@@ -32,6 +32,9 @@ typedef std::vector<std::vector<bool>> Grid;
 
 Grid grid(reserve, std::vector<bool>(reserve));
 Grid updated_grid(reserve, std::vector<bool>(reserve));
+#ifdef FADE_EFFECT_OPERATIONAL
+std::vector<Pos> dead;
+#endif
 
 static int nb_alive(0);
 static int past_alive(0);
@@ -220,7 +223,7 @@ unsigned get_error_id() {
     return error_id;
 }
 
-void adjust_zoom() {
+void adjust_bool_grid() {
     if (Conf::world_size < grid.size()) {
         unsigned len(grid.size());
         for (unsigned i(Conf::world_size); i < len; ++i) {
@@ -268,6 +271,9 @@ void birth_test(unsigned x, unsigned y) {
             new_birth(x, y);
             --nb_alive;
         }else {
+            #ifdef FADE_EFFECT_OPERATIONAL
+            dead.push_back({x, y});
+            #endif
             ++nb_dead;
         }
     }
@@ -353,6 +359,10 @@ bool update(Mode mode) {
     nb_dead = 0;
     past_stable = stable;
     stable = false;
+    #ifdef FADE_EFFECT_OPERATIONAL
+    dead.clear();
+    #endif
+
     for (unsigned i(0); i < grid.size(); ++i) {
         for (unsigned j(0); j < grid[i].size(); ++j) {
             grid[i][j] = updated_grid[i][j];
@@ -361,15 +371,12 @@ bool update(Mode mode) {
     for (unsigned i(0); i < updated_grid.size(); ++i) {
         for (unsigned j(0); j < updated_grid[i].size(); ++j) {
             updated_grid[i][j] = false;
-        }
-    }
-    for (unsigned i(0); i < grid.size(); ++i) {
-        for (unsigned j(0); j < grid[i].size(); ++j) {
             birth_test(j, Conf::world_size - 1 - i);
         }
     }
+
+    // 5-perdiodic oscillations detection
     if (mode == EXPERIMENTAL) {
-        //std::cout << nb_alive << " " << past_alive << " " << past_2_alive << " " << past_3_alive << "\n";
         if (nb_alive == past_alive && past_alive == past_2_alive && past_2_alive == past_3_alive) {
             stable = true;
         }
@@ -394,6 +401,9 @@ void draw_world(unsigned color_theme) {
             }
         }
     }
+    #ifdef FADE_EFFECT_OPERATIONAL // In development
+	graphic_fade_dead(dead, color_theme);
+    #endif
 }
 
 void display() {

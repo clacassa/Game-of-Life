@@ -35,7 +35,7 @@ static Frame default_frame = {-1, Conf::world_size, -1, Conf::world_size,
 static void orthographic_projection(const Cairo::RefPtr<Cairo::Context>& cr,
                                                                         Frame frame);
 
-static unsigned val(1);  // The simulation starts at generation number 1
+static unsigned val(0);
 static unsigned zoom(100);
 static unsigned z_ratio(100);
 static unsigned _theme_(1);
@@ -152,6 +152,8 @@ bool MyArea::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
 
         graphic_draw_world(Conf::world_size, Conf::world_size, _theme_);
         draw_world(1-_theme_);
+        if (_theme_ == 1) unsigned fade = 6;
+        else unsigned fade = 3;
         refresh();
     }
     return true;
@@ -187,6 +189,7 @@ SimulationWindow::SimulationWindow(std::string __filename)
     m_ButtonBox(Gtk::ORIENTATION_VERTICAL, 10),
     m_Box_General(Gtk::ORIENTATION_VERTICAL, 10),
     m_Appearance_Box(Gtk::ORIENTATION_VERTICAL, 10),
+    m_ArrowBox(Gtk::ORIENTATION_HORIZONTAL),
     m_Frame_General("General"),
     m_Frame_Speed("Refresh rate (ms)"),
     m_Button_Start("Start"),
@@ -218,237 +221,35 @@ SimulationWindow::SimulationWindow(std::string __filename)
         m_SuperBox.pack_start(m_Separator, false, false);
         m_SuperBox.pack_start(m_Box);
         m_SuperBox.pack_start(m_StatusBar, false, false);
-
-        m_Separator.set_valign(Gtk::ALIGN_START);
-        m_Separator.set_vexpand(false);
-
-        // Create MenuBar
-        m_MenuBar.append(fileMi);
-        fileMi.set_submenu(m_FileMenu);
-        m_FileMenu.append(openMi);
-        m_FileMenu.append(saveMi);
-        m_FileMenu.append(saveasMi);
-        m_FileMenu.append(file_sepMi);
-        m_FileMenu.append(quitMi);
-        m_MenuBar.append(viewMi);
-        viewMi.set_submenu(m_ViewMenu);
-        m_ViewMenu.append(zoominMi);
-        m_ViewMenu.append(zoomoutMi);
-        m_ViewMenu.append(resetzoomMi);
-        m_ViewMenu.append(view_sepMi);
-        m_ViewMenu.append(showgridMi);
-        m_ViewMenu.append(darkmode);
-        m_MenuBar.append(toolsMi);
-        toolsMi.set_submenu(m_ToolsMenu);
-        m_ToolsMenu.append(experimentMi);
-        m_ToolsMenu.append(simsizeMi);
-        simsizeMi.set_submenu(m_SimsizeMenu);
-        m_SimsizeMenu.append(incrsizeMi);
-        m_SimsizeMenu.append(decrsizeMi);
-        m_MenuBar.append(m_helpMi);
-        m_helpMi.set_submenu(m_HelpMenu);
-        m_HelpMenu.append(helpMi);
-        m_HelpMenu.append(aboutMi);
-
-        // Set some properties
-        m_MenuBar.set_valign(Gtk::ALIGN_START);
-        m_MenuBar.set_vexpand(false);
-
-        experimentMi.set_tooltip_text("stop the simulation when stable");
-
-        // Link the buttons to their signal handler
-        openMi.signal_activate().connect(sigc::mem_fun(*this, 
-                &SimulationWindow::on_button_open_clicked));
-
-        saveMi.set_sensitive(false);
-        saveMi.signal_activate().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_save_clicked));
-
-        saveasMi.signal_activate().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_saveas_clicked));
-
-        quitMi.signal_activate().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_quit_clicked));
-
-        zoominMi.signal_activate().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_zoom_in_clicked));
-
-        zoomoutMi.set_sensitive(false);
-        zoomoutMi.signal_activate().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_zoom_out_clicked));
-
-	    resetzoomMi.set_sensitive(false);
-	    resetzoomMi.signal_activate().connect(sigc::mem_fun(*this,
-		        &SimulationWindow::on_button_reset_zoom_clicked));
-
-        showgridMi.set_active(false);
-        showgridMi.signal_activate().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_checkbutton_grid_checked));
-
-        darkmode.set_active(false);
-        darkmode.signal_activate().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_checkbutton_dark_checked));
-
-        experimentMi.signal_activate().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_test_clicked));
-
-        incrsizeMi.signal_activate().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_increase_size_clicked));
-
-        decrsizeMi.signal_activate().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_decrease_size_clicked));
-
-        helpMi.signal_activate().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_help_clicked));
-
-        aboutMi.signal_activate().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_about_clicked));
-
-        // Create accelerators (shortcuts) for MenuBar items
-        Glib::RefPtr<Gtk::AccelGroup> accel_group = Gtk::AccelGroup::create();
-        this->add_accel_group(accel_group);
-        openMi.add_accelerator("activate", accel_group, GDK_KEY_o,
-                               Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-        saveMi.add_accelerator("activate", accel_group, GDK_KEY_s,
-                               Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-        saveasMi.add_accelerator("activate", accel_group, GDK_KEY_s,
-                               Gdk::SHIFT_MASK, Gtk::ACCEL_VISIBLE);
-        quitMi.add_accelerator("activate", accel_group, GDK_KEY_q,
-                               Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-        zoominMi.add_accelerator("activate", accel_group, GDK_KEY_plus,
-                               Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-        zoomoutMi.add_accelerator("activate", accel_group, GDK_KEY_minus,
-                               Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-	    resetzoomMi.add_accelerator("activate", accel_group, GDK_KEY_0,
-			                   Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-        incrsizeMi.add_accelerator("activate", accel_group, GDK_KEY_Page_Up,
-                               Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-        decrsizeMi.add_accelerator("activate", accel_group, GDK_KEY_Page_Down,
-                               Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-        experimentMi.add_accelerator("activate", accel_group, GDK_KEY_t,
-                               Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-        helpMi.add_accelerator("activate", accel_group, GDK_KEY_F1,
-                               Gdk::RELEASE_MASK, Gtk::ACCEL_VISIBLE);
-
-        // Put the containers into their parent box
         m_Box.pack_start(m_GuiBox, false, false);
         m_Box.pack_start(m_GraphicBox);
         m_GuiBox.pack_start(m_ButtonBox, false, false);
         m_GraphicBox.pack_start(m_Area);
         m_ButtonBox.pack_start(m_Box_General);
-        // m_Frame_General.add(m_Box_General);
         m_ButtonBox.pack_start(m_Frame_Speed);
         m_Frame_Speed.add(m_Scale);
+        m_ButtonBox.pack_start(m_upArr);
+        m_ButtonBox.pack_start(m_ArrowBox, false, false);
+        m_ButtonBox.pack_start(m_downArr);
 
-        // Create Refresh Scale
-        m_Scale.set_range(10, 100);
-        m_Scale.set_round_digits(0);
-        m_Scale.set_value(50);
-        m_Scale.set_inverted(true);
-        m_Scale.add_mark(10, Gtk::POS_BOTTOM, "10");
-	    m_Scale.add_mark(20, Gtk::POS_TOP, "20");
-        m_Scale.add_mark(30, Gtk::POS_BOTTOM, "30");
-	    m_Scale.add_mark(40, Gtk::POS_TOP, "40");
-        m_Scale.add_mark(50, Gtk::POS_BOTTOM, "50");
-	    m_Scale.add_mark(60, Gtk::POS_TOP, "60");
-	    m_Scale.add_mark(70, Gtk::POS_BOTTOM, "70");
-	    m_Scale.add_mark(80, Gtk::POS_TOP, "80");
-	    m_Scale.add_mark(90, Gtk::POS_BOTTOM, "90");
-        m_Scale.add_mark(100, Gtk::POS_TOP, "100");
-        m_Scale.set_draw_value(false);
-        m_Scale.set_show_fill_level(true);
-        m_Scale.set_has_origin(false);
-        m_Scale.set_increments(20, 0);
-        m_Scale.set_property("can-focus", false);
+        m_Separator.set_valign(Gtk::ALIGN_START);
+        m_Separator.set_vexpand(false);
 
-        // Create Start button
-        m_Box_General.pack_start(m_Button_Start);
-        Glib::RefPtr<Gtk::CssProvider> css_provider = Gtk::CssProvider::create();
-        css_provider->load_from_data("button {background-image: image(green);}");
-        m_Button_Start.get_style_context()->add_provider(css_provider,
-            GTK_STYLE_PROVIDER_PRIORITY_USER);
-        m_Button_Start.override_color(Gdk::RGBA("white"));
-        m_Button_Start.signal_clicked().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_start_clicked));
-        m_Button_Start.set_property("can-focus", false);
+        create_MenuBar();
+        // Link the buttons to their signal handler
+        MenuBar_signals_hdl();
+        // Create accelerators (shortcuts) for MenuBar items
+        MenuBar_accelerators();
 
-        // Create Step button
-        m_Box_General.pack_start(m_Button_Step);
-        m_Button_Step.signal_clicked().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_step_clicked));
-        m_Button_Step.set_property("can-focus", false);
-
-        // Create Clear button
-        m_Box_General.pack_start(m_Button_Clear);
-        m_Button_Clear.signal_clicked().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_clear_clicked));
-        m_Button_Clear.set_property("can-focus", false);
-
-        // Create Random button
-        m_Box_General.pack_start(m_Button_Random);
-        m_Button_Random.signal_clicked().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_random_clicked));
-        m_Button_Random.set_property("can-focus", false);
-
-        // Create Reset button
-        m_Box_General.pack_start(m_Button_Reset);
-        m_Button_Reset.signal_clicked().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_reset_clicked));
-        m_Button_Reset.set_property("can-focus", false);
-        m_Button_Reset.set_sensitive(false);
-
-        // Create a separator
-        m_Box_General.pack_start(m_Sep);
-        m_Sep.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
-
-        // Create GosperCanon button
-        m_Box_General.pack_start(m_Button_Canon);
-        m_Button_Canon.signal_toggled().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_gosper_clicked));
-        m_Button_Canon.set_property("can-focus", false);
-
-        // Create SpaceFiller button
-        m_Box_General.pack_start(m_Button_Max);
-        m_Button_Max.signal_toggled().connect(sigc::mem_fun(*this,
-                &SimulationWindow::on_button_max_clicked));
-        m_Button_Max.set_property("can-focus", false);
-
-        // Create Status labels
-        // - for the simulation size
-        m_LabelSize.set_text(m_LabelSize.get_text() + std::to_string(Conf::world_size)
-                           + " x " + std::to_string(Conf::world_size));
-        m_LabelSize.set_halign(Gtk::ALIGN_END);
-        m_LabelSize.set_hexpand(false);
-        // - for the zoom level
-        m_LabelZoom.set_text(std::to_string(zoom) + "%");
-        m_LabelZoom.set_halign(Gtk::ALIGN_END);
-        m_LabelZoom.set_hexpand(false);
-        // - for the coordinates
-        m_LabelCoordinates.set_text("x : " + x + "    y : " +y);
-        m_LabelCoordinates.set_halign(Gtk::ALIGN_END);
-        m_LabelCoordinates.set_hexpand(false);
-        // - for the sim. info
-        m_Label_Info.set_text("Generation : ");
-        m_Label_Info.set_halign(Gtk::ALIGN_END);
-        m_Label_Info.set_hexpand(false);
-
-        // Create StatusBar
-        m_StatusBar.pack_end(m_LabelSize);
-        m_StatusBar.pack_end(m_LabelZoom);
-        m_StatusBar.pack_end(m_LabelCoordinates);
-        m_StatusBar.pack_end(m_Label_Info);
-        m_StatusBar.pack_end(m_Label_Test);
-        m_StatusBar.set_valign(Gtk::ALIGN_END);
-        m_StatusBar.set_vexpand(false);
-        m_StatusBar.set_halign(Gtk::ALIGN_BASELINE);
+        create_refresh_scale();
+        create_control_buttons();
+        create_StatusBar();
+        create_frameControl_buttons();
 
         if (!_theme_) {
             darkmode.set_active(true);
         }
-
-///////////////        Glib::signal_idle().connect(sigc::mem_fun(*this, &SimulationWindow::on_idle)); ///////////////////////
         show_all_children();
-
         // Check for any file reading error when a file is passed as argument
         file_error_dialog();
     }
@@ -473,16 +274,7 @@ void SimulationWindow::file_error_dialog() {
         children[0]->set_margin_left(400);              
         error_dialog.set_icon_from_file("share/icons/notifications.ico");
         error_dialog.set_transient_for(*this);
-        this->set_title("Game of Life");
-
-        int result = error_dialog.run();
-
-        switch(result) {
-            case(Gtk::RESPONSE_OK):
-                break;
-            default:
-                break;
-        }
+        error_dialog.run();
     }
     if (get_error_id() == 1) {
         std::string m1("Failed opening the file\nMake sure the file exists");
@@ -497,9 +289,11 @@ void SimulationWindow::file_error_dialog() {
                             + m1 + "</span>", true);
         }
 
+        std::vector<Gtk::Widget*> children = error_dialog.get_action_area()->get_children();
+        children[0]->set_margin_left(400);              
+        error_dialog.set_icon_from_file("share/icons/notifications.ico");
         error_dialog.set_transient_for(*this);
         error_dialog.run();
-        this->set_title("Game of Life");
     }
 }
 
@@ -571,6 +365,25 @@ void SimulationWindow::updt_statusbar_labels() {
     m_LabelCoordinates.set_text("x : " + x + "    y : " + y);
 }
 
+void SimulationWindow::reset_max_canon() {
+    m_Button_Canon.set_active(false);
+    m_Button_Canon.set_sensitive(true);
+    m_Button_Max.set_active(false);
+    m_Button_Max.set_sensitive(true);
+    saveMi.set_sensitive(false);
+    val = 0;
+}
+
+// The asterisk shows that change are occuring, but the file
+// is not overwritten yet. Click on 'Save' to overwrite the file
+void SimulationWindow::file_modified() {
+    if (filename != "" && !saveMi.get_sensitive()) {
+        saveMi.set_sensitive(true);
+        m_Button_Reset.set_sensitive(true);
+        this->set_title("*" + this->get_title());
+    }
+}
+
 void set_dark_theme_on() {
     _theme_ = 0;
 }
@@ -596,11 +409,7 @@ void SimulationWindow::on_button_start_clicked() {
     }
     else 
     {
-        if (filename != "" && !saveMi.get_sensitive()) {
-            saveMi.set_sensitive(true);
-            m_Button_Reset.set_sensitive(true);
-            this->set_title("*" + this->get_title());
-        }
+        file_modified();
         m_Button_Start.set_label("Stop");
 
         // Change the button background color to dark red
@@ -619,11 +428,7 @@ void SimulationWindow::on_button_step_clicked() {
     if (m_Button_Start.get_label() == "Start") {
         // Do a single simulation step
         on_timeout();
-        if (filename != "" && !saveMi.get_sensitive()) {
-            saveMi.set_sensitive(true);
-            m_Button_Reset.set_sensitive(true);
-            this->set_title("*" + this->get_title());
-        }
+        file_modified();
     }
 }
 
@@ -632,39 +437,27 @@ void SimulationWindow::on_button_reset_clicked() {
     init();
     read_file(filename);
     this->set_title(this->get_title().replace(0, 1, ""));
-
-    // Reset labels and buttons
     m_Label_Info.set_text("Generation: ");
-    m_Button_Canon.set_active(false);
-    m_Button_Canon.set_sensitive(true);
-    m_Button_Max.set_active(false);
-    m_Button_Max.set_sensitive(true);
-    saveMi.set_sensitive(false);
-    val = 1;
+    reset_max_canon();
 }
 
 void SimulationWindow::on_button_clear_clicked() {
     init();
-    m_Area.refresh();
     this->set_title("Game of Life");
     m_Label_Info.set_text("Generation: ");
+    m_Button_Reset.set_sensitive(false);
     filename = "";
     if (experiment) {
         m_Label_Test.set_text("Experimental");
     }
-
-    // Reset the state of both buttons below
-    m_Button_Canon.set_active(false);
-    m_Button_Canon.set_sensitive(true);
-    m_Button_Max.set_active(false);
-    m_Button_Max.set_sensitive(true);
-    saveMi.set_sensitive(false);
-    val = 1;
+    reset_max_canon();
 }
 
 void SimulationWindow::on_button_random_clicked() {
-    on_button_clear_clicked();
-
+    init();
+    reset_max_canon();
+    file_modified();
+    
     // Randomly fill half of the grid
     unsigned rand_x, rand_y;
     for (unsigned index(0); index < (Conf::world_size*Conf::world_size)/2; ++index) {
@@ -719,7 +512,8 @@ void SimulationWindow::on_button_open_clicked() {
                        + std::to_string(Conf::world_size));
 
             unsigned pos = filename.find_last_of('\\');
-            this->set_title(filename.replace(0, pos + 1, "") + "  -  Game of Life");
+            std::string flnm(filename);
+            this->set_title(flnm.replace(0, pos + 1, "") + "  -  Game of Life");
 
             if (Conf::world_size >= 300 && showgridMi.get_active()) {
                 disable_show_grid();
@@ -845,6 +639,7 @@ void SimulationWindow::on_button_zoom_out_clicked() {
 
     if (zoom == 100) {
         zoomoutMi.set_sensitive(false);
+        resetzoomMi.set_sensitive(false);
     }
     zoominMi.set_sensitive(true);
 }
@@ -854,6 +649,8 @@ void SimulationWindow::on_button_reset_zoom_clicked() {
     zoom = 100;
     z_ratio = 100;
     m_LabelZoom.set_text(std::to_string(zoom) + "%");
+    zoomoutMi.set_sensitive(false);
+    resetzoomMi.set_sensitive(false);
 
     // Reset the zoom level of the frame
     set_default_frame();
@@ -914,7 +711,8 @@ void SimulationWindow::on_button_increase_size_clicked() {
     }
     decrsizeMi.set_sensitive(true);
     set_default_frame();
-    adjust_zoom();
+    on_button_reset_zoom_clicked();
+    adjust_bool_grid();
     m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "
                        + std::to_string(Conf::world_size));
 }
@@ -926,7 +724,8 @@ void SimulationWindow::on_button_decrease_size_clicked() {
     }
     incrsizeMi.set_sensitive(true);
     set_default_frame();
-    adjust_zoom();
+    on_button_reset_zoom_clicked();
+    adjust_bool_grid();
     m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "
                        + std::to_string(Conf::world_size));
 }
@@ -1027,20 +826,27 @@ void SimulationWindow::on_dontshowagain_checked() {
 }
 
 void SimulationWindow::on_button_help_clicked() {
-    std::ifstream f("README.txt");
-    std::string readme;
-    std::ostringstream ss;
-    ss << f.rdbuf();
-    readme = ss.str();
-    Gtk::MessageDialog help_dial(readme, true);
-    Gtk::Box* marea = help_dial.get_message_area();
-    Gtk::Scrollbar scrollbar;
-    scrollbar.set_orientation(Gtk::ORIENTATION_VERTICAL);
-    marea->set_orientation(Gtk::ORIENTATION_HORIZONTAL);
-    marea->pack_start(scrollbar);
-    help_dial.set_transient_for(*this);
-    help_dial.show_all_children();
-    help_dial.run();
+    #ifdef _WIN32
+    system("notepad Help.txt");
+    #elif __APPLE__
+    system("open -e Help.txt");
+    #elif __linux__
+    system("gedit Help.txt");
+    #endif
+    // std::ifstream f("Help.txt");
+    // std::string readme;
+    // std::ostringstream ss;
+    // ss << f.rdbuf();
+    // readme = ss.str();
+    // Gtk::MessageDialog help_dial(readme, true);
+    // Gtk::Box* marea = help_dial.get_message_area();
+    // Gtk::Scrollbar scrollbar;
+    // scrollbar.set_orientation(Gtk::ORIENTATION_VERTICAL);
+    // marea->set_orientation(Gtk::ORIENTATION_HORIZONTAL);
+    // marea->pack_start(scrollbar);
+    // help_dial.set_transient_for(*this);
+    // help_dial.show_all_children();
+    // help_dial.run();
 }
 
 void SimulationWindow::on_button_about_clicked() {
@@ -1096,19 +902,10 @@ void SimulationWindow::on_button_about_clicked() {
 void SimulationWindow::on_button_gosper_clicked() {
     if (m_Button_Canon.get_active()) {
         draw_canon_planeur(0, 0);
-        if (filename != "" && !saveMi.get_sensitive()) {
-            saveMi.set_sensitive(true);
-            m_Button_Reset.set_sensitive(true);
-            this->set_title("*" + this->get_title());
-        }
     }else {
         erase_canon_planeur(0, 0);
-        if (filename != "" && !saveMi.get_sensitive()) {
-            saveMi.set_sensitive(true);
-            m_Button_Reset.set_sensitive(true);
-            this->set_title("*" + this->get_title());
-        }
     }
+    file_modified();
     m_Area.refresh();
 }
 
@@ -1118,6 +915,7 @@ void SimulationWindow::on_button_max_clicked() {
     }else {
         erase_spacefiller(Conf::world_size/2 - 13, Conf::world_size/2 - 13);
     }
+    file_modified();
     m_Area.refresh();
 }
 
@@ -1128,17 +926,14 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
 		// raw mouse coordinates in the window frame
 		double clic_x = event->x ;
 		double clic_y = event->y ;
-        std::cout << "raw : " << clic_x << " " << clic_y << "\n";
 
 		// origin of the drawing area
 		double origin_x = m_Area.get_allocation().get_x();
 		double origin_y = m_Area.get_allocation().get_y();
-        std::cout << "origin : " << origin_x << " " << origin_y << "\n";
 
 		// get width and height of drawing area
 		double width = m_Area.get_allocation().get_width();
 		double height= m_Area.get_allocation().get_height();
-        std::cout << "area dim : " << width << " " << height << "\n";
 
 		// retain only mouse events located within the drawing area
 		if(clic_x >= origin_x && clic_x <= origin_x + width &&
@@ -1147,8 +942,8 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
 			Point p({clic_x - origin_x, clic_y -origin_y});
             int x(round(p.x*Conf::world_size/width));
             int y(round(Conf::world_size - (p.y*Conf::world_size/height)));
-
-            std::cout << x << "    " << y << "\n";
+            // x = (x + (default_frame.xMax + default_frame.xMin)/2) / (zoom/100);
+            // y = (y + (default_frame.yMax + default_frame.yMin)/2) / (zoom/100);
 
             if (x < (int)Conf::world_size && y < (int)Conf::world_size) {
 
@@ -1162,12 +957,7 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
                     new_death(x, y);
                     m_Area.refresh();
                 }
-                if (filename != "" && !saveMi.get_sensitive()) {
-                    // Show to the user that the file has been modified
-                    saveMi.set_sensitive(true);
-                    m_Button_Reset.set_sensitive(true);
-                    this->set_title("*" + this->get_title());
-                }
+                file_modified();
             }
 		}
 	}
@@ -1246,9 +1036,12 @@ bool SimulationWindow::on_key_press_event(GdkEventKey * key_event) {
                 SimulationWindow::on_button_random_clicked();
                 break;
             case '5':
-                SimulationWindow::on_button_gosper_clicked();
+                SimulationWindow::on_button_reset_clicked();
                 break;
             case '6':
+                SimulationWindow::on_button_gosper_clicked();
+                break;
+            case '7':
                 SimulationWindow::on_button_max_clicked();
                 break;
             case 'h':
@@ -1268,4 +1061,246 @@ bool SimulationWindow::on_key_press_event(GdkEventKey * key_event) {
         }
     }
     return Gtk::Window::on_key_press_event(key_event);
+}
+
+void SimulationWindow::create_MenuBar() {
+    m_MenuBar.append(fileMi);
+    fileMi.set_submenu(m_FileMenu);
+    m_FileMenu.append(openMi);
+    m_FileMenu.append(saveMi);
+    m_FileMenu.append(saveasMi);
+    m_FileMenu.append(file_sepMi);
+    m_FileMenu.append(quitMi);
+    m_MenuBar.append(viewMi);
+    viewMi.set_submenu(m_ViewMenu);
+    m_ViewMenu.append(zoominMi);
+    m_ViewMenu.append(zoomoutMi);
+    m_ViewMenu.append(resetzoomMi);
+    m_ViewMenu.append(view_sepMi);
+    m_ViewMenu.append(showgridMi);
+    m_ViewMenu.append(darkmode);
+    m_MenuBar.append(toolsMi);
+    toolsMi.set_submenu(m_ToolsMenu);
+    m_ToolsMenu.append(experimentMi);
+    m_ToolsMenu.append(simsizeMi);
+    simsizeMi.set_submenu(m_SimsizeMenu);
+    m_SimsizeMenu.append(incrsizeMi);
+    m_SimsizeMenu.append(decrsizeMi);
+    m_MenuBar.append(m_helpMi);
+    m_helpMi.set_submenu(m_HelpMenu);
+    m_HelpMenu.append(helpMi);
+    m_HelpMenu.append(aboutMi);
+
+    m_MenuBar.set_valign(Gtk::ALIGN_START);
+    m_MenuBar.set_vexpand(false);
+    experimentMi.set_tooltip_text("stop the simulation when stable");
+}
+
+void SimulationWindow::MenuBar_signals_hdl() {
+    openMi.signal_activate().connect(sigc::mem_fun(*this, 
+                &SimulationWindow::on_button_open_clicked));
+
+    saveMi.set_sensitive(false);
+    saveMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_save_clicked));
+
+    saveasMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_saveas_clicked));
+
+    quitMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_quit_clicked));
+
+    zoominMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_zoom_in_clicked));
+
+    zoomoutMi.set_sensitive(false);
+    zoomoutMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_zoom_out_clicked));
+
+    resetzoomMi.set_sensitive(false);
+    resetzoomMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_reset_zoom_clicked));
+
+    showgridMi.set_active(false);
+    showgridMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_checkbutton_grid_checked));
+
+    darkmode.set_active(false);
+    darkmode.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_checkbutton_dark_checked));
+
+    experimentMi.set_active(false);
+    experimentMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_test_clicked));
+
+    incrsizeMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_increase_size_clicked));
+
+    decrsizeMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_decrease_size_clicked));
+
+    helpMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_help_clicked));
+
+    aboutMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_about_clicked));
+}
+
+void SimulationWindow::MenuBar_accelerators() {
+    Glib::RefPtr<Gtk::AccelGroup> accel_group = Gtk::AccelGroup::create();
+    this->add_accel_group(accel_group);
+    openMi.add_accelerator("activate", accel_group, GDK_KEY_o,
+                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    saveMi.add_accelerator("activate", accel_group, GDK_KEY_s,
+                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    saveasMi.add_accelerator("activate", accel_group, GDK_KEY_s,
+                            Gdk::SHIFT_MASK, Gtk::ACCEL_VISIBLE);
+    quitMi.add_accelerator("activate", accel_group, GDK_KEY_q,
+                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    zoominMi.add_accelerator("activate", accel_group, GDK_KEY_plus,
+                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    zoomoutMi.add_accelerator("activate", accel_group, GDK_KEY_minus,
+                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    resetzoomMi.add_accelerator("activate", accel_group, GDK_KEY_0,
+                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    incrsizeMi.add_accelerator("activate", accel_group, GDK_KEY_Page_Up,
+                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    decrsizeMi.add_accelerator("activate", accel_group, GDK_KEY_Page_Down,
+                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    experimentMi.add_accelerator("activate", accel_group, GDK_KEY_t,
+                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    helpMi.add_accelerator("activate", accel_group, GDK_KEY_F1,
+                            Gdk::RELEASE_MASK, Gtk::ACCEL_VISIBLE);
+}
+
+void SimulationWindow::create_refresh_scale() {
+    m_Scale.set_range(10, 100);
+    m_Scale.set_round_digits(0);
+    m_Scale.set_value(50);
+    m_Scale.set_inverted(true);
+    m_Scale.add_mark(10, Gtk::POS_BOTTOM, "10");
+    m_Scale.add_mark(20, Gtk::POS_TOP, "20");
+    m_Scale.add_mark(30, Gtk::POS_BOTTOM, "30");
+    m_Scale.add_mark(40, Gtk::POS_TOP, "40");
+    m_Scale.add_mark(50, Gtk::POS_BOTTOM, "50");
+    m_Scale.add_mark(60, Gtk::POS_TOP, "60");
+    m_Scale.add_mark(70, Gtk::POS_BOTTOM, "70");
+    m_Scale.add_mark(80, Gtk::POS_TOP, "80");
+    m_Scale.add_mark(90, Gtk::POS_BOTTOM, "90");
+    m_Scale.add_mark(100, Gtk::POS_TOP, "100");
+    m_Scale.set_draw_value(false);
+    m_Scale.set_show_fill_level(true);
+    m_Scale.set_has_origin(false);
+    m_Scale.set_increments(20, 0);
+    m_Scale.set_property("can-focus", false);
+}
+
+void SimulationWindow::create_control_buttons() {
+    // Create Start button
+    m_Box_General.pack_start(m_Button_Start);
+    Glib::RefPtr<Gtk::CssProvider> css_provider = Gtk::CssProvider::create();
+    css_provider->load_from_data("button {background-image: image(green);}");
+    m_Button_Start.get_style_context()->add_provider(css_provider,
+        GTK_STYLE_PROVIDER_PRIORITY_USER);
+    m_Button_Start.override_color(Gdk::RGBA("white"));
+    m_Button_Start.signal_clicked().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_start_clicked));
+    m_Button_Start.set_property("can-focus", false);
+
+    // Create Step button
+    m_Box_General.pack_start(m_Button_Step);
+    m_Button_Step.signal_clicked().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_step_clicked));
+    m_Button_Step.set_property("can-focus", false);
+
+    // Create Clear button
+    m_Box_General.pack_start(m_Button_Clear);
+    m_Button_Clear.signal_clicked().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_clear_clicked));
+    m_Button_Clear.set_property("can-focus", false);
+
+    // Create Random button
+    m_Box_General.pack_start(m_Button_Random);
+    m_Button_Random.signal_clicked().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_random_clicked));
+    m_Button_Random.set_property("can-focus", false);
+
+    // Create Reset button
+    m_Box_General.pack_start(m_Button_Reset);
+    m_Button_Reset.signal_clicked().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_reset_clicked));
+    m_Button_Reset.set_property("can-focus", false);
+    m_Button_Reset.set_sensitive(false);
+
+    // Create a separator
+    m_Box_General.pack_start(m_Sep);
+    m_Sep.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
+
+    // Create GosperCanon button
+    m_Box_General.pack_start(m_Button_Canon);
+    m_Button_Canon.signal_toggled().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_gosper_clicked));
+    m_Button_Canon.set_property("can-focus", false);
+
+    // Create SpaceFiller button
+    m_Box_General.pack_start(m_Button_Max);
+    m_Button_Max.signal_toggled().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_max_clicked));
+    m_Button_Max.set_property("can-focus", false);
+}
+
+void SimulationWindow::create_frameControl_buttons() {
+    m_ArrowBox.pack_start(m_leftArr);
+    m_ArrowBox.pack_start(m_rightArr);
+
+    m_upArr.set_image_from_icon_name("pan-up-symbolic");
+    m_upArr.set_hexpand(false);
+    m_upArr.set_halign(Gtk::ALIGN_CENTER);
+    m_upArr.signal_clicked().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_uparrow_pressed));
+    m_downArr.set_image_from_icon_name("pan-down-symbolic");
+    m_downArr.set_hexpand(false);
+    m_downArr.set_halign(Gtk::ALIGN_CENTER);
+    m_downArr.signal_clicked().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_downarrow_pressed));
+    m_rightArr.set_image_from_icon_name("pan-end-symbolic");
+    m_rightArr.set_hexpand(false);
+    m_rightArr.set_halign(Gtk::ALIGN_END);
+    m_rightArr.signal_clicked().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_rightarrow_pressed));
+    m_leftArr.set_image_from_icon_name("pan-start-symbolic");
+    m_leftArr.set_hexpand(false);
+    m_leftArr.set_halign(Gtk::ALIGN_START);
+    m_leftArr.signal_clicked().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_leftarrow_pressed));
+}
+
+void SimulationWindow::create_StatusBar() {
+    // - for the simulation size
+    m_LabelSize.set_text(m_LabelSize.get_text() + std::to_string(Conf::world_size)
+                        + " x " + std::to_string(Conf::world_size));
+    m_LabelSize.set_halign(Gtk::ALIGN_END);
+    m_LabelSize.set_hexpand(false);
+    // - for the zoom level
+    m_LabelZoom.set_text(std::to_string(zoom) + "%");
+    m_LabelZoom.set_halign(Gtk::ALIGN_END);
+    m_LabelZoom.set_hexpand(false);
+    // - for the coordinates
+    m_LabelCoordinates.set_text("x : " + x + "    y : " +y);
+    m_LabelCoordinates.set_halign(Gtk::ALIGN_END);
+    m_LabelCoordinates.set_hexpand(false);
+    // - for the sim. info
+    m_Label_Info.set_text("Generation : ");
+    m_Label_Info.set_halign(Gtk::ALIGN_END);
+    m_Label_Info.set_hexpand(false);
+
+    // Create StatusBar
+    m_StatusBar.pack_end(m_LabelSize);
+    m_StatusBar.pack_end(m_LabelZoom);
+    m_StatusBar.pack_end(m_LabelCoordinates);
+    m_StatusBar.pack_end(m_Label_Info);
+    m_StatusBar.pack_end(m_Label_Test);
+    m_StatusBar.set_valign(Gtk::ALIGN_END);
+    m_StatusBar.set_vexpand(false);
+    m_StatusBar.set_halign(Gtk::ALIGN_BASELINE);
 }

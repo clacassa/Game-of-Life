@@ -31,14 +31,14 @@ struct Frame{
     double asp, height, width;
 };
 
-void set_default_frame();
-void set_dark_theme_on();
-
 struct Point
 {
 	double x;
 	double y;
 };
+
+void set_default_frame();
+void set_dark_theme_on();
 
 class MyArea : public Gtk::DrawingArea {
 public:
@@ -66,8 +66,18 @@ public:
     void file_error_dialog();
     void set_compliant_theme();
 protected:
+    void create_MenuBar();
+    void MenuBar_signals_hdl();
+    void MenuBar_accelerators();
+    void create_refresh_scale();
+    void create_control_buttons();
+    void create_frameControl_buttons();
+    void create_StatusBar();
+
     void zoom_frame();
     void updt_statusbar_labels();
+    void reset_max_canon();
+    void file_modified();
 
     void on_button_open_clicked();
     void on_button_save_clicked();
@@ -131,7 +141,7 @@ protected:
     Gtk::MenuItem resetzoomMi;
     Gtk::CheckMenuItem showgridMi;
     Gtk::CheckMenuItem darkmode;
-    Gtk::MenuItem experimentMi;
+    Gtk::CheckMenuItem experimentMi;
     Gtk::MenuItem simsizeMi;
     Gtk::Menu m_SimsizeMenu;
     Gtk::MenuItem incrsizeMi;
@@ -146,12 +156,13 @@ protected:
 
     Gtk::Box m_SuperBox;
     Gtk::Box m_HeaderBox, m_Box, m_GuiBox, m_GraphicBox, m_ButtonBox;
-    Gtk::Box m_Box_General, m_Appearance_Box;
+    Gtk::Box m_Box_General, m_Appearance_Box, m_ArrowBox;
     Gtk::Frame m_Frame_myarea,  m_Frame_General, m_Frame_Theme;
     Gtk::Frame m_Frame_Speed;
     Gtk::Button m_Button_Start, m_Button_Step, m_Button_Reset, m_Button_Clear, m_Button_Random;
     Gtk::ToggleButton m_Button_Canon, m_Button_Max;
     Gtk::Scale m_Scale;
+    Gtk::Button m_upArr, m_downArr, m_rightArr, m_leftArr;
     Gtk::Label m_Label_Info, m_Label_Test, m_Label_Theme, m_LabelSize, m_LabelZoom, m_LabelCoordinates;
 
     Gtk::Statusbar m_StatusBar;
