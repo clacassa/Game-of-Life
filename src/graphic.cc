@@ -1,22 +1,20 @@
-/************************************************************************
+/*
+ *  graphic.cc -- GameofLife -- GUI with various options and view controls
+ *  Copyright (C) 2022 Cyprien Lacassagne
 
-*	Game of Life -- GUI with various options and view controls
-*	Copyright (C) 2022 Cyprien Lacassagne
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
 
-*	This program is free software: you can redistribute it and/or modify
-*	it under the terms of the GNU General Public License as published by
-*	the Free Software Foundation, either version 3 of the License, or
-*	(at your option) any later version.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
 
-*	This program is distributed in the hope that it will be useful,
-*	but WITHOUT ANY WARRANTY; without even the implied warranty of
-*	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*	GNU General Public License for more details.
-
-*	You should have received a copy of the GNU General Public License
-*	along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-*************************************************************************/
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 #include "graphic_gui.h"
 #include "config.h"
@@ -86,40 +84,18 @@ void graphic_draw_cell(unsigned x, unsigned y, unsigned ref_color) {
     (*ptcr)->stroke();
 }
 
-#ifdef FADE_EFFECT_OPERATIONAL
-void graphic_fade_dead(std::vector<Pos> dead, unsigned ref_color) {
-    (*ptcr)->set_source_rgb(gray_fade[fade].r, gray_fade[fade].g,
-                                                 gray_fade[fade].b);
-    ++fade_count;
-    if (fade_count >= 5)  {
-        std::vector<Pos> fadead(dead);
-        fade_count = 0;
-        fade = ref_color;
-    }
-    for (unsigned i(0); i < fadead.size(); ++i) {
-        (*ptcr)->set_line_width(0.0001);
-        (*ptcr)->move_to(fadead[i].x - cell_size/2., fadead[i].y - cell_size/2.);
-        (*ptcr)->line_to(fadead[i].x - cell_size/2., fadead[i].y + cell_size/2.);
-        (*ptcr)->line_to(fadead[i].x + cell_size/2., fadead[i].y + cell_size/2.);
-        (*ptcr)->line_to(fadead[i].x + cell_size/2., fadead[i].y - cell_size/2.);
-        (*ptcr)->close_path();
-        (*ptcr)->fill_preserve();
-        (*ptcr)->stroke();
-    }
-    if (fadead.empty()) {
-        (*ptcr)->set_line_width(1);
-        (*ptcr)->move_to(18, 18);
-        (*ptcr)->line_to(46, 46);
-        (*ptcr)->fill_preserve();
-        (*ptcr)->stroke();
-    }
-    
-    if (fade == 0) fade = 6;
-    //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    if (ref_color == 1) ++fade;
-    else --fade;
+void graphic_fade_dead(unsigned x, unsigned y, const Color gray) {
+
+    (*ptcr)->set_source_rgb(gray.r, gray.g, gray.b);
+    (*ptcr)->set_line_width(0.0001);
+    (*ptcr)->move_to(x - cell_size/2., y - cell_size/2.);
+    (*ptcr)->line_to(x - cell_size/2., y + cell_size/2.);
+    (*ptcr)->line_to(x + cell_size/2., y + cell_size/2.);
+    (*ptcr)->line_to(x + cell_size/2., y - cell_size/2.);
+    (*ptcr)->close_path();
+    (*ptcr)->fill_preserve();
+    (*ptcr)->stroke();
 }
-#endif
 
 void enable_show_grid() {
     show_grid = true;

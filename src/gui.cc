@@ -1,22 +1,20 @@
-/************************************************************************
+/*
+ *  gui.cc -- GameofLife -- GUI with various options and view controls
+ *  Copyright (C) 2022 Cyprien Lacassagne
 
-*	Game of Life -- GUI with various options and view controls
-*	Copyright (C) 2022 Cyprien Lacassagne
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
 
-*	This program is free software: you can redistribute it and/or modify
-*	it under the terms of the GNU General Public License as published by
-*	the Free Software Foundation, either version 3 of the License, or
-*	(at your option) any later version.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
 
-*	This program is distributed in the hope that it will be useful,
-*	but WITHOUT ANY WARRANTY; without even the implied warranty of
-*	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*	GNU General Public License for more details.
-
-*	You should have received a copy of the GNU General Public License
-*	along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-*************************************************************************/
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 #include "gui.h"
 #include "graphic_gui.h"
@@ -174,6 +172,7 @@ SimulationWindow::SimulationWindow(std::string __filename)
     zoomoutMi("Zoom out"),
     resetzoomMi("Reset zoom"),
     showgridMi("Show grid"),
+    fadeMi("Fade effect"),
     darkmode("Dark theme"),
     experimentMi("Experiment"),
     simsizeMi("World size"),
@@ -370,7 +369,6 @@ void SimulationWindow::reset_max_canon() {
     m_Button_Canon.set_sensitive(true);
     m_Button_Max.set_active(false);
     m_Button_Max.set_sensitive(true);
-    saveMi.set_sensitive(false);
     val = 0;
 }
 
@@ -434,6 +432,7 @@ void SimulationWindow::on_button_step_clicked() {
 
 void SimulationWindow::on_button_reset_clicked() {
     m_Button_Reset.set_sensitive(false);
+    saveMi.set_sensitive(false);
     init();
     read_file(filename);
     this->set_title(this->get_title().replace(0, 1, ""));
@@ -446,6 +445,7 @@ void SimulationWindow::on_button_clear_clicked() {
     this->set_title("Game of Life");
     m_Label_Info.set_text("Generation: ");
     m_Button_Reset.set_sensitive(false);
+    saveMi.set_sensitive(false);
     filename = "";
     if (experiment) {
         m_Label_Test.set_text("Experimental");
@@ -743,12 +743,16 @@ void SimulationWindow::on_checkbutton_dark_checked() {
     }
 }
 
+void SimulationWindow::on_checkbutton_fade_checked() {
+    toggle_fade_effect();
+}
+
 void SimulationWindow::on_checkbutton_grid_checked() {
     if (showgridMi.get_active()) {
         if (Conf::world_size > 300 && !accept_show_grid) {
             
             // Create "don't show again" button and connect its signal handler
-            Gtk::CheckButton dontshowagain("don't show again");
+            dontshowagain.set_label("Don't show again");
             dontshowagain.signal_clicked().connect(sigc::mem_fun(*this,
                     &SimulationWindow::on_dontshowagain_checked));
 
@@ -822,7 +826,8 @@ void SimulationWindow::on_checkbutton_grid_checked() {
 }
 
 void SimulationWindow::on_dontshowagain_checked() {
-    accept_show_grid = true;
+    if (dontshowagain.get_active()) accept_show_grid = true;
+    else accept_show_grid = false;
 }
 
 void SimulationWindow::on_button_help_clicked() {
@@ -1078,6 +1083,7 @@ void SimulationWindow::create_MenuBar() {
     m_ViewMenu.append(resetzoomMi);
     m_ViewMenu.append(view_sepMi);
     m_ViewMenu.append(showgridMi);
+    m_ViewMenu.append(fadeMi);
     m_ViewMenu.append(darkmode);
     m_MenuBar.append(toolsMi);
     toolsMi.set_submenu(m_ToolsMenu);
@@ -1124,6 +1130,10 @@ void SimulationWindow::MenuBar_signals_hdl() {
     showgridMi.set_active(false);
     showgridMi.signal_activate().connect(sigc::mem_fun(*this,
             &SimulationWindow::on_checkbutton_grid_checked));
+
+    fadeMi.set_active(false);
+    fadeMi.signal_activate().connect(sigc::mem_fun(*this,
+            SimulationWindow::on_checkbutton_fade_checked));
 
     darkmode.set_active(false);
     darkmode.signal_activate().connect(sigc::mem_fun(*this,

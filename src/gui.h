@@ -1,22 +1,20 @@
-/************************************************************************
+/*
+ *  gui.h -- GameofLife -- GUI with various options and view controls
+ *  Copyright (C) 2022 Cyprien Lacassagne
 
-*	Game of Life -- GUI with various options and view controls
-*	Copyright (C) 2022 Cyprien Lacassagne
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
 
-*	This program is free software: you can redistribute it and/or modify
-*	it under the terms of the GNU General Public License as published by
-*	the Free Software Foundation, either version 3 of the License, or
-*	(at your option) any later version.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
 
-*	This program is distributed in the hope that it will be useful,
-*	but WITHOUT ANY WARRANTY; without even the implied warranty of
-*	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*	GNU General Public License for more details.
-
-*	You should have received a copy of the GNU General Public License
-*	along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-*************************************************************************/
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 #ifndef GUI_H_INCLUDED
 #define GUI_H_INCLUDED
@@ -103,6 +101,7 @@ protected:
 
     void on_checkbutton_dark_checked();
     void on_checkbutton_grid_checked();
+    void on_checkbutton_fade_checked();
     void on_dontshowagain_checked();
 
     void on_event_add_timer();
@@ -140,6 +139,7 @@ protected:
     Gtk::MenuItem zoomoutMi;
     Gtk::MenuItem resetzoomMi;
     Gtk::CheckMenuItem showgridMi;
+    Gtk::CheckMenuItem fadeMi;
     Gtk::CheckMenuItem darkmode;
     Gtk::CheckMenuItem experimentMi;
     Gtk::MenuItem simsizeMi;
@@ -173,6 +173,7 @@ protected:
     int timeout_value;
     std::string x, y;
     std::string filename;
+    Gtk::CheckButton dontshowagain;
 };
 
 #endif

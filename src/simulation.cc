@@ -1,22 +1,20 @@
-/************************************************************************
+/*
+ *  simulation.cc -- GameofLife -- GUI with various options and view controls
+ *  Copyright (C) 2022 Cyprien Lacassagne
 
-*	Game of Life -- GUI with various options and view controls
-*	Copyright (C) 2022 Cyprien Lacassagne
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
 
-*	This program is free software: you can redistribute it and/or modify
-*	it under the terms of the GNU General Public License as published by
-*	the Free Software Foundation, either version 3 of the License, or
-*	(at your option) any later version.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
 
-*	This program is distributed in the hope that it will be useful,
-*	but WITHOUT ANY WARRANTY; without even the implied warranty of
-*	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*	GNU General Public License for more details.
-
-*	You should have received a copy of the GNU General Public License
-*	along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-*************************************************************************/
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 #include "simulation.h"
 #include "graphic.h"
@@ -32,9 +30,7 @@ typedef std::vector<std::vector<bool>> Grid;
 
 Grid grid(reserve, std::vector<bool>(reserve));
 Grid updated_grid(reserve, std::vector<bool>(reserve));
-#ifdef FADE_EFFECT_OPERATIONAL
-std::vector<Pos> dead;
-#endif
+std::vector<Pos> dead, dead2, dead3, dead4;
 
 static int nb_alive(0);
 static int past_alive(0);
@@ -45,6 +41,7 @@ static int past_5_alive(0);
 static int nb_dead(0);
 static bool stable(false);
 static bool past_stable(false);
+static bool fade_effect_enabled(false);
 
 enum reading_State { WORLD_SIZE, NB_CELLS, COORDINATES, END, OK };
 static int state(WORLD_SIZE);
@@ -271,9 +268,9 @@ void birth_test(unsigned x, unsigned y) {
             new_birth(x, y);
             --nb_alive;
         }else {
-            #ifdef FADE_EFFECT_OPERATIONAL
-            dead.push_back({x, y});
-            #endif
+            if (fade_effect_enabled) {
+                dead.push_back({x, y});
+            }
             ++nb_dead;
         }
     }
@@ -359,10 +356,11 @@ bool update(Mode mode) {
     nb_dead = 0;
     past_stable = stable;
     stable = false;
-    #ifdef FADE_EFFECT_OPERATIONAL
-    dead.clear();
-    #endif
 
+    // Update vectors for fade effect
+    if (fade_effect_enabled) fade_update();
+
+    // Update all cells
     for (unsigned i(0); i < grid.size(); ++i) {
         for (unsigned j(0); j < grid[i].size(); ++j) {
             grid[i][j] = updated_grid[i][j];
@@ -374,7 +372,6 @@ bool update(Mode mode) {
             birth_test(j, Conf::world_size - 1 - i);
         }
     }
-
     // 5-perdiodic oscillations detection
     if (mode == EXPERIMENTAL) {
         if (nb_alive == past_alive && past_alive == past_2_alive && past_2_alive == past_3_alive) {
@@ -394,6 +391,36 @@ bool update(Mode mode) {
 }
 
 void draw_world(unsigned color_theme) {
+
+    if (fade_effect_enabled) {
+        if (color_theme) {
+            for (unsigned i(0); i < dead4.size(); ++i) {
+                graphic_fade_dead(dead4[i].x, dead4[i].y, gray4);
+            }
+            for (unsigned i(0); i < dead3.size(); ++i) {
+                graphic_fade_dead(dead3[i].x, dead3[i].y, gray3);
+            }
+            for (unsigned i(0); i < dead2.size(); ++i) {
+                graphic_fade_dead(dead2[i].x, dead2[i].y, gray2);
+            }
+            for (unsigned i(0); i < dead.size(); ++i) {
+                graphic_fade_dead(dead[i].x, dead[i].y, gray1);
+            }
+        }else {
+            for (unsigned i(0); i < dead4.size(); ++i) {
+                graphic_fade_dead(dead4[i].x, dead4[i].y, gray1);
+            }
+            for (unsigned i(0); i < dead3.size(); ++i) {
+                graphic_fade_dead(dead3[i].x, dead3[i].y, gray2);
+            }
+            for (unsigned i(0); i < dead2.size(); ++i) {
+                graphic_fade_dead(dead2[i].x, dead2[i].y, gray3);
+            }
+            for (unsigned i(0); i < dead.size(); ++i) {
+                graphic_fade_dead(dead[i].x, dead[i].y, gray4);
+            } 
+        }
+    }
     for (unsigned i(0); i < updated_grid.size(); ++i) {
         for (unsigned j(0); j < updated_grid[i].size(); ++j) {
             if (updated_grid[i][j]) {
@@ -401,9 +428,6 @@ void draw_world(unsigned color_theme) {
             }
         }
     }
-    #ifdef FADE_EFFECT_OPERATIONAL // In development
-	graphic_fade_dead(dead, color_theme);
-    #endif
 }
 
 void display() {
@@ -422,6 +446,38 @@ void init() {
             updated_grid[i][j] = false;
         }
     }
+    dead.clear();
+    dead2.clear();
+    dead3.clear();
+    dead4.clear();
+}
+
+void toggle_fade_effect() {
+ if (fade_effect_enabled) {
+    fade_effect_enabled = false;
+    dead.clear();
+    dead2.clear();
+    dead3.clear();
+    dead4.clear();
+ }else {
+    fade_effect_enabled = true;
+ }
+}
+
+void fade_update() {
+    dead4.clear();
+    for (unsigned i(0); i < dead3.size(); ++i) {
+        dead4.push_back(dead3[i]);
+    }
+    dead3.clear();
+    for (unsigned i(0); i < dead2.size(); ++i) {
+        dead3.push_back(dead2[i]);
+    }
+    dead2.clear();
+    for (unsigned i(0); i < dead.size(); ++i) {
+        dead2.push_back(dead[i]);
+    }
+    dead.clear();
 }
 
 void draw_canon_planeur(unsigned x, unsigned y) {
