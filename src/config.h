@@ -21,12 +21,16 @@
 
 #include <iostream>
 
-//constexpr unsigned world_size(300);
-constexpr unsigned window_size(850);  // window size in pixels
+constexpr unsigned window_size(850);    // window size in pixels
 constexpr unsigned cell_size(1);
-constexpr unsigned reserve(250);
-constexpr unsigned world_size_max(500);
-constexpr unsigned world_size_min(50);
+constexpr unsigned reserve(250);    // At startup, the world is a square of side reserve
+                                    // The # of cells is reserve^2
+                                    // This value must be included between world_size_min
+                                    // and world_size_max
+
+constexpr unsigned world_size_max(500); // Upper limit for the side of the world
+                                        // Feel free to change it
+constexpr unsigned world_size_min(50); 
 
 constexpr unsigned dialog_button_margin(400);
 
