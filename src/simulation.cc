@@ -335,14 +335,15 @@ unsigned neighbours(unsigned x, unsigned y) {
         if (grid[1][x+1]) ++n;
         return n;
     }
-    if (grid[Conf::world_size - 1 - y - 1][x - 1]) ++n;
-    if (grid[Conf::world_size - 1 - y - 1][x]) ++n;
-    if (grid[Conf::world_size - 1 - y - 1][x + 1]) ++n;
+    if (grid[Conf::world_size - y - 2][x - 1]) ++n;
+    if (grid[Conf::world_size - y - 2][x]) ++n;
+    if (grid[Conf::world_size - y - 2][x + 1]) ++n;
     if (grid[Conf::world_size - 1 - y][x - 1]) ++n;
     if (grid[Conf::world_size - 1 - y][x + 1]) ++n;
-    if (grid[Conf::world_size - 1 - y + 1][x - 1]) ++n;
-    if (grid[Conf::world_size - 1 - y + 1][x]) ++n;
-    if (grid[Conf::world_size - 1 - y + 1][x + 1]) ++n;
+    if (grid[Conf::world_size - y][x - 1]) ++n;
+    if (grid[Conf::world_size - y][x]) ++n;
+    if (grid[Conf::world_size - y][x + 1]) ++n;
+
     return n;
 }
 

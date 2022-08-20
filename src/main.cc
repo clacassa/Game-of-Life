@@ -1,22 +1,20 @@
-/************************************************************************
+/*
+ *  main.cc -- GameofLife -- GUI with various options and view controls
+ *  Copyright (C) 2022 Cyprien Lacassagne
 
-*	Game of Life -- GUI with various options and view controls
-*	Copyright (C) 2022 Cyprien Lacassagne
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
 
-*	This program is free software: you can redistribute it and/or modify
-*	it under the terms of the GNU General Public License as published by
-*	the Free Software Foundation, either version 3 of the License, or
-*	(at your option) any later version.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
 
-*	This program is distributed in the hope that it will be useful,
-*	but WITHOUT ANY WARRANTY; without even the implied warranty of
-*	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*	GNU General Public License for more details.
-
-*	You should have received a copy of the GNU General Public License
-*	along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-*************************************************************************/
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 #include "simulation.h"
 #include "gui.h"
@@ -57,9 +55,10 @@ int main(int argc, char * argv[]) {
 	SimulationWindow window(filename);
 	window.set_default_size(window_size + 140, window_size + 60); // perfect w/h ratio
 	window.set_position(Gtk::WIN_POS_CENTER);
+	#ifndef __WIN32
 	window.set_default_icon_from_file("share/icons/forme_stable_3.ico");
+	#endif
 	window.set_resizable(true);
-	//window.set_compliant_theme(); // Crash the program for some obscur reason
 
 	if (filename == "") window.set_title("Game of Life");
 	else {
