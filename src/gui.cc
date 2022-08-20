@@ -37,9 +37,8 @@ static unsigned val(0);
 static unsigned zoom(100);
 static unsigned z_ratio(100);
 static unsigned _theme_(1);
-static bool grid_shown(false);
+static bool show_grid(false);
 static bool accept_show_grid(false);
-static bool first_zoom(true);
 
 void set_default_frame() {
     default_frame.xMin = -1;
@@ -148,10 +147,8 @@ bool MyArea::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
         adjustFrame();
         orthographic_projection(cr, frame);
 
-        graphic_draw_world(Conf::world_size, Conf::world_size, _theme_);
+        graphic_draw_world(Conf::world_size, Conf::world_size, _theme_, show_grid);
         draw_world(1-_theme_);
-        if (_theme_ == 1) unsigned fade = 6;
-        else unsigned fade = 3;
         refresh();
     }
     return true;
@@ -188,7 +185,6 @@ SimulationWindow::SimulationWindow(std::string __filename)
     m_ButtonBox(Gtk::ORIENTATION_VERTICAL, 10),
     m_Box_General(Gtk::ORIENTATION_VERTICAL, 10),
     m_Appearance_Box(Gtk::ORIENTATION_VERTICAL, 10),
-    m_ArrowBox(Gtk::ORIENTATION_HORIZONTAL),
     m_Frame_General("General"),
     m_Frame_Speed("Refresh rate (ms)"),
     m_Button_Start("Start"),
@@ -204,8 +200,8 @@ SimulationWindow::SimulationWindow(std::string __filename)
     disconnect(false),
     experiment(false),
     timeout_value(50),
-    filename(__filename),
     frame_surface(default_frame.xMax*default_frame.xMax),
+    filename(__filename),
     x(std::to_string(default_frame.xMax / 2)),
     y(std::to_string(default_frame.yMax / 2))
     {
@@ -227,9 +223,6 @@ SimulationWindow::SimulationWindow(std::string __filename)
         m_ButtonBox.pack_start(m_Box_General);
         m_ButtonBox.pack_start(m_Frame_Speed);
         m_Frame_Speed.add(m_Scale);
-        m_ButtonBox.pack_start(m_upArr);
-        m_ButtonBox.pack_start(m_ArrowBox, false, false);
-        m_ButtonBox.pack_start(m_downArr);
 
         m_Separator.set_valign(Gtk::ALIGN_START);
         m_Separator.set_vexpand(false);
@@ -243,7 +236,6 @@ SimulationWindow::SimulationWindow(std::string __filename)
         create_refresh_scale();
         create_control_buttons();
         create_StatusBar();
-        create_frameControl_buttons();
 
         if (!_theme_) {
             darkmode.set_active(true);
@@ -294,23 +286,6 @@ void SimulationWindow::file_error_dialog() {
         error_dialog.set_transient_for(*this);
         error_dialog.run();
     }
-}
-
-void SimulationWindow::set_compliant_theme() {
-    #ifdef _WIN32
-    Glib::RefPtr<Gtk::CssProvider> css_provider = Gtk::CssProvider::create();
-    Glib::RefPtr<Gdk::Screen> screen = Gdk::Screen::get_default();
-    Glib::RefPtr<Gio::File> css_file = Gio::File::create_for_path("share/themes/Windows102/gtk-3.0/gtk.css");
-    css_provider->load_from_file(css_file);
-    this->get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-    #elif __linux__
-    Glib::RefPtr<Gtk::CssProvider> css_provider = Gtk::CssProvider::create();
-    Glib::RefPtr<Gdk::Screen> screen = Gdk::Screen::get_default();
-    Glib::RefPtr<Gio::File> css_file = Gio::File::create_for_path("share/themes/Windows10Dark/gtk-3.0/gtk.css");
-    css_provider->load_from_file(css_file);
-    this->get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-    // #elif __APPLE__
-    #endif
 }
 
 void SimulationWindow::zoom_frame() {
@@ -516,7 +491,7 @@ void SimulationWindow::on_button_open_clicked() {
             this->set_title(flnm.replace(0, pos + 1, "") + "  -  Game of Life");
 
             if (Conf::world_size >= 300 && showgridMi.get_active()) {
-                disable_show_grid();
+                show_grid = false;
                 showgridMi.set_active(false);
             }
             m_Area.refresh();
@@ -592,27 +567,8 @@ void SimulationWindow::on_button_test_clicked() {
 }
 
 void SimulationWindow::on_button_zoom_in_clicked() {
-    // If first time the user zooms in, show how to navigate throughout 
-    // the world
-    if (first_zoom) {
-        std::string msg("To move the frame, " \
-                        "you can use 4 differents keys, for the four directions:\n\n" \
-                        "'H' to go left\n'J' to go down\n'K' to go up, and\n'L' to go right");
-        Gtk::MessageDialog nav_com_dial(msg, true, Gtk::MESSAGE_INFO, Gtk::BUTTONS_OK, false);
-        // Font options
-        if (_theme_) {
-            nav_com_dial.set_message("<span size='large' foreground='#000099' letter_spacing='1024'>"
-                            + msg + "</span>", true);
-        }else {
-            nav_com_dial.set_message("<span size='large' foreground='#C0C0C0' letter_spacing='1024'>"
-                            + msg + "</span>", true);
-        }
-        std::vector<Gtk::Widget*> children = nav_com_dial.get_action_area()->get_children();
-        children[0]->set_margin_left(dialog_button_margin);
-        nav_com_dial.set_transient_for(*this);
-        nav_com_dial.run();
-        first_zoom = false;
-    }
+    // Display navigation hints
+    m_LabelHelp.set_text("H=Left   |  L=Right\nJ=Down  |  K=Up");
 
     // Increase the zoom level and decrease the view angle (z ratio)
     zoom += 10;
@@ -640,6 +596,7 @@ void SimulationWindow::on_button_zoom_out_clicked() {
     if (zoom == 100) {
         zoomoutMi.set_sensitive(false);
         resetzoomMi.set_sensitive(false);
+        m_LabelHelp.set_text("");
     }
     zoominMi.set_sensitive(true);
 }
@@ -651,6 +608,7 @@ void SimulationWindow::on_button_reset_zoom_clicked() {
     m_LabelZoom.set_text(std::to_string(zoom) + "%");
     zoomoutMi.set_sensitive(false);
     resetzoomMi.set_sensitive(false);
+    m_LabelHelp.set_text("");
 
     // Reset the zoom level of the frame
     set_default_frame();
@@ -807,7 +765,7 @@ void SimulationWindow::on_checkbutton_grid_checked() {
 
             switch(result) {
                 case(1):
-                    enable_show_grid();
+                    show_grid = true;
                     break;
                 case(0):
                     showgridMi.set_active(false);
@@ -817,11 +775,10 @@ void SimulationWindow::on_checkbutton_grid_checked() {
                     break;
             }
         }else {
-            enable_show_grid();
+            show_grid = true;
         }
-        grid_shown = true;
     }else {
-        disable_show_grid();
+        show_grid = false;
     }
 }
 
@@ -1259,32 +1216,6 @@ void SimulationWindow::create_control_buttons() {
     m_Button_Max.set_property("can-focus", false);
 }
 
-void SimulationWindow::create_frameControl_buttons() {
-    m_ArrowBox.pack_start(m_leftArr);
-    m_ArrowBox.pack_start(m_rightArr);
-
-    m_upArr.set_image_from_icon_name("pan-up-symbolic");
-    m_upArr.set_hexpand(false);
-    m_upArr.set_halign(Gtk::ALIGN_CENTER);
-    m_upArr.signal_clicked().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_uparrow_pressed));
-    m_downArr.set_image_from_icon_name("pan-down-symbolic");
-    m_downArr.set_hexpand(false);
-    m_downArr.set_halign(Gtk::ALIGN_CENTER);
-    m_downArr.signal_clicked().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_downarrow_pressed));
-    m_rightArr.set_image_from_icon_name("pan-end-symbolic");
-    m_rightArr.set_hexpand(false);
-    m_rightArr.set_halign(Gtk::ALIGN_END);
-    m_rightArr.signal_clicked().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_rightarrow_pressed));
-    m_leftArr.set_image_from_icon_name("pan-start-symbolic");
-    m_leftArr.set_hexpand(false);
-    m_leftArr.set_halign(Gtk::ALIGN_START);
-    m_leftArr.signal_clicked().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_leftarrow_pressed));
-}
-
 void SimulationWindow::create_StatusBar() {
     // - for the simulation size
     m_LabelSize.set_text(m_LabelSize.get_text() + std::to_string(Conf::world_size)
@@ -1310,6 +1241,7 @@ void SimulationWindow::create_StatusBar() {
     m_StatusBar.pack_end(m_LabelCoordinates);
     m_StatusBar.pack_end(m_Label_Info);
     m_StatusBar.pack_end(m_Label_Test);
+    m_StatusBar.pack_end(m_LabelHelp);
     m_StatusBar.set_valign(Gtk::ALIGN_END);
     m_StatusBar.set_vexpand(false);
     m_StatusBar.set_halign(Gtk::ALIGN_BASELINE);

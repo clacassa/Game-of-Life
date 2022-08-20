@@ -62,14 +62,12 @@ class SimulationWindow : public Gtk::Window {
 public:
     SimulationWindow(std::string __filename);
     void file_error_dialog();
-    void set_compliant_theme();
 protected:
     void create_MenuBar();
     void MenuBar_signals_hdl();
     void MenuBar_accelerators();
     void create_refresh_scale();
     void create_control_buttons();
-    void create_frameControl_buttons();
     void create_StatusBar();
 
     void zoom_frame();
@@ -120,7 +118,6 @@ protected:
     void error_dialog_open(std::string error_message);
 
     MyArea m_Area;
-    double frame_surface;
 
     Gtk::MenuBar m_MenuBar;
     Gtk::MenuItem fileMi;
@@ -156,14 +153,13 @@ protected:
 
     Gtk::Box m_SuperBox;
     Gtk::Box m_HeaderBox, m_Box, m_GuiBox, m_GraphicBox, m_ButtonBox;
-    Gtk::Box m_Box_General, m_Appearance_Box, m_ArrowBox;
+    Gtk::Box m_Box_General, m_Appearance_Box;
     Gtk::Frame m_Frame_myarea,  m_Frame_General, m_Frame_Theme;
     Gtk::Frame m_Frame_Speed;
     Gtk::Button m_Button_Start, m_Button_Step, m_Button_Reset, m_Button_Clear, m_Button_Random;
     Gtk::ToggleButton m_Button_Canon, m_Button_Max;
     Gtk::Scale m_Scale;
-    Gtk::Button m_upArr, m_downArr, m_rightArr, m_leftArr;
-    Gtk::Label m_Label_Info, m_Label_Test, m_Label_Theme, m_LabelSize, m_LabelZoom, m_LabelCoordinates;
+    Gtk::Label m_Label_Info, m_Label_Test, m_Label_Theme, m_LabelSize, m_LabelZoom, m_LabelCoordinates, m_LabelHelp;
 
     Gtk::Statusbar m_StatusBar;
 
@@ -171,8 +167,9 @@ protected:
     bool disconnect;
     bool experiment;
     int timeout_value;
-    std::string x, y;
+    double frame_surface;
     std::string filename;
+    std::string x, y;
     Gtk::CheckButton dontshowagain;
 };
 
