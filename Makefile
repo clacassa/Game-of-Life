@@ -26,7 +26,7 @@ EXEDIR = ./bin
 # On Windows, start the program without a console in the background
 # and link an icon to it
 ifeq ($(OS),Windows_NT)
-#CXXFLAGS += -mwindows
+CXXFLAGS += -mwindows
 OFILES += ./res/my.res
 endif
 
