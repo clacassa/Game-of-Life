@@ -23,16 +23,17 @@
 
 constexpr unsigned window_size(850);    // window size in pixels
 constexpr unsigned cell_size(1);
-constexpr unsigned reserve(250);    // At startup, the world is a square of side reserve
+constexpr unsigned reserve(300);    // At startup, the world is a square of side reserve.
                                     // The # of cells is reserve^2
                                     // This value must be included between world_size_min
                                     // and world_size_max
 
-constexpr unsigned world_size_max(500); // Upper limit for the side of the world
+constexpr unsigned world_size_max(500); // Upper limit for the side of the world.
                                         // Feel free to change it
-constexpr unsigned world_size_min(50); 
+constexpr unsigned world_size_min(50);
+constexpr unsigned startup_timeout_value(30);
 
-constexpr unsigned dialog_button_margin(400);
+constexpr unsigned dialog_button_margin(200);
 
 class Conf {
 public:

@@ -51,6 +51,8 @@ void birth_test(unsigned x, unsigned y);
 void new_birth(unsigned x, unsigned y);
 void new_death(unsigned x, unsigned y);
 
-void draw_world(unsigned color_theme);
+// Ask to draw the cells that are alive at the current 
+// state of the simulation
+void draw_cells(unsigned color_theme);
 
 #endif

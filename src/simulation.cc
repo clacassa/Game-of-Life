@@ -250,8 +250,10 @@ void adjust_bool_grid() {
 }
 
 void new_birth(unsigned x, unsigned y) {
-    updated_grid[Conf::world_size -1 - y][x] = true;
-    ++nb_alive;
+    if (!updated_grid[Conf::world_size - 1 - y][x]) {
+        updated_grid[Conf::world_size - 1 - y][x] = true;
+        ++nb_alive;
+    }
 }
 
 void new_death(unsigned x, unsigned y) {
@@ -391,7 +393,7 @@ bool update(Mode mode) {
     return false;
 }
 
-void draw_world(unsigned color_theme) {
+void draw_cells(unsigned color_theme) {
 
     if (fade_effect_enabled) {
         if (color_theme) {

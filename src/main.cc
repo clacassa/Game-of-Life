@@ -39,13 +39,11 @@ int main(int argc, char * argv[]) {
 	argc = 1;
 	set_default_frame();
 
-	// Initialize the srand variable with the time of your machine
-	// to provide a fresh new random generation each time the program is run
 	srand((unsigned) time(0));
 
 	auto app = Gtk::Application::create(argc, argv, "com.github.clacassa.Game-of-Life");
 
-	// Uncomment this if you want the application to start in dark mode - recompile to take effect
+	// Uncomment this if you want the application to start in dark mode - need a recompilation
 		g_object_set(gtk_settings_get_default(),
     			"gtk-application-prefer-dark-theme", TRUE, NULL);
 		set_dark_theme_on();
@@ -53,12 +51,14 @@ int main(int argc, char * argv[]) {
 
 	// Set default properties for the main window
 	SimulationWindow window(filename);
-	window.set_default_size(window_size + 140, window_size + 60); // perfect w/h ratio
+	window.set_default_size(window_size*1.05, window_size); // perfect w/h ratio
 	window.set_position(Gtk::WIN_POS_CENTER);
-	#ifndef __WIN32
+	#ifndef _WIN32
 	window.set_default_icon_from_file("share/icons/forme_stable_3.ico");
 	#endif
+	window.set_default_icon_from_file("share/icons/forme_stable_3.ico");
 	window.set_resizable(true);
+	window.file_error_dialog();
 
 	if (filename == "") window.set_title("Game of Life");
 	else {

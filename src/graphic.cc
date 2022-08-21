@@ -25,17 +25,13 @@
 #include <chrono>
 
 static const std::vector<Color> color_table({black, white, gray});
-#ifdef FADE_EFFECT_OPERATIONAL
-static const std::vector<Color> gray_fade({gray1, gray2, gray3, gray4});
-#endif
 static const Cairo::RefPtr<Cairo::Context>* ptcr(nullptr);
-static unsigned fade_count(4);
 
 void graphic_set_context(const Cairo::RefPtr<Cairo::Context>& cr) {
     ptcr = &cr;
 }
 
-void graphic_draw_world(double xMax, double yMax, unsigned ref_color) {
+void graphic_draw_world(double xMax, double yMax, unsigned ref_color, bool show_grid) {
     (*ptcr)->set_source_rgb(color_table[ref_color].r, color_table[ref_color].g,
  	                                                    color_table[ref_color].b);
     (*ptcr)->set_line_width(1.0);
@@ -95,12 +91,4 @@ void graphic_fade_dead(unsigned x, unsigned y, const Color gray) {
     (*ptcr)->close_path();
     (*ptcr)->fill_preserve();
     (*ptcr)->stroke();
-}
-
-void enable_show_grid() {
-    show_grid = true;
-}
-
-void disable_show_grid() {
-    show_grid = false;
 }
