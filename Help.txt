@@ -1,35 +1,68 @@
+---------------------------
+Command: <b>Shortcut</b>
+    <i>Description</i>
+---------------------------
 
-Name       | Shortcut| Description
+Start/Stop: <b>Space</b>
+    <i>Launches or pauses the simulation.</i>
 
-Start/Stop | 1       | Starts/Stops the simulation.
-           |         | You can change the speed via the scale widget.
-Step       | 2       | Performs one single update.
-Clear      | 3       | Clears the board and prepare a new simulation for being run.
-Random     | 4       | Randomly fills half the surface of the board with alive cells.
-Reset      | 5       | When a file is open and modified, cancels any change.
-Glider gun | 6       | Spawns a gun that eternally launches gliders.
-Spacefiller| 7       | Spawns a special figure that fills the board. 
-Open       | Ctrl+O  | Opens a file and initalizes the simulation with its content.
-Save as    | Ctrl+S  | Saves the current state of the simulation in a text file, 
-           |         | which can then be opened to resume the simulation.
-Quit       | Ctrl+Q  | Quits the application.
-Zoom in    | Ctrl++  | Zooms in by 10%.
-Zoom out   | Ctrl+-  | Zooms out by 10%.
-Reset zoom | Ctrl+0  | Resets the zoom level to 0 (100%).
-Show grid  |         | Displays a light gray grid over the board.
-           |         | It can help spawning alive cells on the board with the mouse.
-Dark side  |         | Switches to dark theme when ticked, to light theme when unticked.
-Experiment | Ctrl+T  | Enables/Disables the experiment mode. In this mode,
-           |         | the simulation stops as soon as the evolution stabilizes.
-           | h       | Moves the view frame left
-           | j       | Moves the view frame up
-           | k       | Moves the view frame down
-           | l       | Moves the view frame right
+Step: <b>1</b>
+    <i>Performs one single update.</i>
 
-World size
-=> Extend  | Ctrl+PageUp  | Increases the size of the board (virtual world) by 50px.
-=> Shrink  | Ctrl+PageDown| Decreases the size of the board by 50px.
+Clear: <b>2</b>
+    <i>Clears the board and prepares a new simulation for being run.</i>
 
-Refresh rate|        | Lets you change the speed of the simulation.
-            |        | The smaller the rate, the higher the fps. 
-            |        | Be sure to stop and restart the simulation for the change to take effect.
+Random: <b>3</b>
+    <i>Randomly fills half the surface of the board with alive cells.</i>
+
+Reset: <b>4</b>
+    <i>When a file is open and modified, cancels any change.</i>
+
+Glider gun: <b>5</b>
+    <i>Draws a gun that eternally launches gliders.</i>
+
+Spacefiller: <b>6</b>
+    <i>Draws a special figure that fills the board.</i>   
+
+Open: <b>Ctrl+O</b>
+    <i>Opens a file and initalizes the simulation with its content.</i>
+
+Save as: <b>Ctrl+S</b>
+    <i>Saves the current state of the simulation in a text file,   
+    which can then be opened to resume the simulation.</i>
+
+Quit: <b>Ctrl+Q</b>
+    <i>Quits the application.</i>
+
+Zoom in: <b>Ctrl++</b>
+Zoom out: <b>Ctrl+-</b>
+Reset zoom: <b>Ctrl+0</b>
+    <i>Resets the zoom level to 0 (100%).</i>
+
+Show Grid:
+    <i>Displays a light gray grid over the board.  
+    It can help drawing cells on the board with the mouse.</i>
+
+Dark Theme:
+    <i>Switches to dark theme when ticked, to light theme when unticked.</i>
+
+Stability Detection: <b>Ctrl+T</b>
+    <i>Enables/Disables the S.D. (Stability Detection) mode. In this mode,  
+    the simulation stops as soon as the evolution stabilizes over time.</i>
+
+Moves the view frame left: <b>H</b>
+Moves the view frame down: <b>J</b>
+Moves the view frame up: <b>K</b>
+Moves the view frame right: <b>L</b>
+    <i>Vim-like</i>
+  
+World size  
+=> Extend: <b>Ctrl+PageUp</b>
+    <i>Increases the size of the board (virtual world) by 50px.</i>
+=> Shrink: <b>Ctrl+PageDown</b>
+    <i>Decreases the size of the board by 50px.</i>
+  
+Refresh:
+    <i>Allows you to change the speed of the simulation.  
+    The smaller the rate, the higher the fps.   
+    Be sure to stop and restart the simulation for the change to take effect.</i>
