@@ -800,7 +800,7 @@ bool SimulationWindow::on_button_release_event(GdkEventButton * event) {
 bool SimulationWindow::on_motion_notify_event(GdkEventMotion * event) {
 
     Glib::RefPtr<Gdk::Window> ref_win(m_Area.get_window());
-    auto scroll = Gdk::Cursor::create(Gdk::CursorType::MIDDLEBUTTON);
+    auto scroll = Gdk::Cursor::create(Gdk::CursorType::DOUBLE_ARROW);
     // raw mouse coordinates in the window frame
     double clic_x = event->x ;
     double clic_y = event->y ;
@@ -863,7 +863,7 @@ bool SimulationWindow::on_enter_notify_event(GdkEventCrossing * crossing_event) 
         ref_window->set_cursor(Gdk::Cursor::create(Gdk::CursorType::PENCIL));
     }
     else if (crossing_event->type == GDK_LEAVE_NOTIFY) {
-        ref_window->set_cursor(Gdk::Cursor::create(Gdk::CursorType::MIDDLEBUTTON));
+        ref_window->set_cursor(Gdk::Cursor::create(Gdk::CursorType::ARROW));
     }
     return true;
 }
