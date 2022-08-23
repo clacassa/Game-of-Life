@@ -132,7 +132,7 @@ static void orthographic_projection(const Cairo::RefPtr<Cairo::Context>& cr,
 void MyArea::draw_frame(const Cairo::RefPtr<Cairo::Context>& cr) {
 
     if (_theme_) {
-        cr->set_source_rgb(white.r, white.g, white.b);
+        cr->set_source_rgb(gray1.r, gray1.g, gray1.b);
     }else {
         cr->set_source_rgb(0.1, 0.1, 0.1);
     }
@@ -183,8 +183,8 @@ SimulationWindow::SimulationWindow(std::string __filename)
     aboutMi("About"),
     m_SuperBox(Gtk::ORIENTATION_VERTICAL),
     m_Box(Gtk::ORIENTATION_HORIZONTAL),
-    m_Box_General(Gtk::ORIENTATION_VERTICAL, 10),
-    m_ButtonBox(Gtk::ORIENTATION_VERTICAL, 2),
+    m_Box_General(Gtk::ORIENTATION_VERTICAL, 15),
+    m_ButtonBox(Gtk::ORIENTATION_VERTICAL, 5),
     m_Frame_Speed("Refresh (ms)"),
     m_Button_Start("Start"),
     m_Button_Step("Step"),
@@ -202,12 +202,13 @@ SimulationWindow::SimulationWindow(std::string __filename)
     frame_surface(default_frame.xMax*default_frame.xMax),
     filename(__filename),
     x(std::to_string(default_frame.xMax / 2)),
-    y(std::to_string(default_frame.yMax / 2))
+    y(std::to_string(default_frame.yMax / 2)),
+    button_type(NONE)
     {
         m_Box.set_margin_top(2);
         m_Box.set_margin_right(2);
-        m_Box_General.set_margin_left(2);
-        m_Box_General.set_margin_right(2);
+        m_Box_General.set_margin_left(5);
+        m_Box_General.set_margin_right(5);
         m_Box_General.set_size_request(130);
 
         add(m_SuperBox);
@@ -379,7 +380,7 @@ void SimulationWindow::on_button_clear_clicked() {
     if (experiment) {
         m_Label_Test.set_label("<span foreground='blue'>S.D. ON</span>");
     }else {
-        m_Label_Test.set_label("Stability detection OFF");
+        m_Label_Test.set_label("S.D. OFF");
     }
     reset_max_canon();
 }
@@ -405,43 +406,33 @@ void SimulationWindow::on_button_random_clicked() {
 }
 
 void SimulationWindow::on_button_open_clicked() {
-    Gtk::FileChooserDialog dialog("Open", Gtk::FILE_CHOOSER_ACTION_OPEN);
-    dialog.set_transient_for(*this);
-    dialog.add_button("_Open", Gtk::RESPONSE_OK);
-    dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
 
-    int result = dialog.run();
+    auto dialog = Gtk::FileChooserNative::create("Open a file", Gtk::FILE_CHOOSER_ACTION_OPEN, "_Open", "_Cancel");
+    auto filter = Gtk::FileFilter::create();
+    // Show text files only
+    filter->add_pattern("*.txt");
+    dialog->add_filter(filter);
+    int response = dialog->run();
+    dialog->hide();
 
-    switch(result) {
-        case(Gtk::RESPONSE_OK): {
-            dialog.hide();
+    if (response == Gtk::RESPONSE_ACCEPT) {
+        filename = dialog->get_filename();
+        // Clear the grids of booleans
+        init();
+        // Read data and check for any error
+        read_file(filename);
 
-            // Clear the grids of booleans
-            init();
-            filename = (dialog.get_filename());
-            // Read data and check for any error
-            read_file(filename);
-            file_error_dialog();
+        set_default_frame();
+        updt_statusbar_coord();
+        m_Label_Info.set_label("<span weight='bold' > Generation : " + std::to_string(val) + "</span>");
+        m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "+ std::to_string(Conf::world_size));
 
-            set_default_frame();
-            updt_statusbar_coord();
-            m_Label_Info.set_label("<span weight='bold' > Generation : " + std::to_string(val) + "</span>");
-            m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "
-                       + std::to_string(Conf::world_size));
-
-            unsigned pos = filename.find_last_of('\\');
-            std::string flnm(filename);
-            this->set_title(flnm.replace(0, pos + 1, "") + "  -  Game of Life");
-            m_Area.refresh();
-            break;
-        }
-        case(Gtk::RESPONSE_CANCEL): {
-            break;
-        }
-        default: {
-            break;
-        }
+        unsigned pos = filename.find_last_of('\\');
+        std::string flnm = filename;
+        this->set_title(flnm.replace(0, pos + 1, "") + "  -  Game of Life");
+        file_error_dialog();
     }
+    m_Area.refresh();
 }
 
 void SimulationWindow::file_error_dialog() {
@@ -487,27 +478,17 @@ void SimulationWindow::on_button_save_clicked() {
 }
 
 void SimulationWindow::on_button_saveas_clicked() {
-    Gtk::FileChooserDialog dialog("Save as", Gtk::FILE_CHOOSER_ACTION_SAVE);
+    auto dialog = Gtk::FileChooserNative::create("Save as", Gtk::FILE_CHOOSER_ACTION_SAVE, "_Save", "_Cancel");
+    auto filter = Gtk::FileFilter::create();
+    // Show only text files
+    filter->add_pattern("*.txt");
+    dialog->add_filter(filter);
+    int response = dialog->run();
     
-    dialog.set_transient_for(*this);
-    dialog.add_button("_Save", Gtk::RESPONSE_OK);
-    dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
-
-    int result = dialog.run();
-
-    switch(result) {
-        case(Gtk::RESPONSE_OK): {
-            filename = dialog.get_filename();
-            save_file(filename);
-            break;
-        }
-        case(Gtk::RESPONSE_CANCEL): {
-            break;
-        }
-        default: {
-            break;
-        }
-    }
+    if (response == Gtk::RESPONSE_ACCEPT) {
+        filename = dialog->get_filename();
+        save_file(filename);
+    }    
 }
 
 void SimulationWindow::on_button_test_clicked() {
@@ -677,7 +658,7 @@ void SimulationWindow::on_button_help_clicked() {
 
 void SimulationWindow::on_button_about_clicked() {
 
-    Gtk::AboutDialog about_dial;
+    Gtk::AboutDialog about_dial(true);
     std::vector<Glib::ustring> authors(1, "Cyprien Lacassagne");
     // Julian contributed to this project by sharing me his
     // feedback about the GUI during the development, thanks!
@@ -794,13 +775,11 @@ bool SimulationWindow::on_button_release_event(GdkEventButton * event) {
     Glib::RefPtr<Gdk::Window> ref_win(m_Area.get_window());
     auto pencil = Gdk::Cursor::create(Gdk::CursorType::PENCIL);
     ref_win->set_cursor(pencil);
+    button_type = NONE;
     return true;
 }
 
 bool SimulationWindow::on_motion_notify_event(GdkEventMotion * event) {
-
-    Glib::RefPtr<Gdk::Window> ref_win(m_Area.get_window());
-    auto scroll = Gdk::Cursor::create(Gdk::CursorType::DOUBLE_ARROW);
     // raw mouse coordinates in the window frame
     double clic_x = event->x ;
     double clic_y = event->y ;
@@ -846,9 +825,9 @@ bool SimulationWindow::on_motion_notify_event(GdkEventMotion * event) {
                 }else if (y >= delta_y*3/4 + default_frame.yMin) {
                     on_uparrow_pressed();
                 }
-                ref_win->set_cursor(scroll);
                 break;
             default:
+                button_type = NONE;
                 break;
             }
             m_Area.refresh();
@@ -1035,7 +1014,7 @@ void SimulationWindow::MenuBar_signals_hdl() {
 
     fadeMi.set_active(false);
     fadeMi.signal_activate().connect(sigc::mem_fun(*this,
-            SimulationWindow::on_checkbutton_fade_checked));
+            &SimulationWindow::on_checkbutton_fade_checked));
 
     darkmode.set_active(false);
     darkmode.signal_activate().connect(sigc::mem_fun(*this,
@@ -1100,8 +1079,8 @@ void SimulationWindow::create_refresh_scale() {
     m_Scale.add_mark(40, Gtk::POS_BOTTOM, "40");
     m_Scale.add_mark(50, Gtk::POS_BOTTOM, "50");
     m_Scale.set_value_pos(Gtk::POS_TOP);
-    m_Scale.set_show_fill_level(true);
-    m_Scale.set_has_origin(false);
+    m_Scale.set_show_fill_level(false);
+    m_Scale.set_has_origin(true);
     m_Scale.set_digits(0);
     m_Scale.set_round_digits(0);
     m_Scale.set_inverted(true);

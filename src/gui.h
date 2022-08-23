@@ -23,7 +23,7 @@
 
 // Parse what action has to be done by "on_motion_notify_event"
 // Because it does not have access to the "event->button" information
-enum ButtonType {LEFT, RIGHT, SCROLL};
+enum ButtonType {NONE, LEFT, RIGHT, SCROLL};
 
 const std::string ERR_OPEN_FILE("Failed opening the file\nMake sure the file exists");
 const std::string ERR_CONFIG_FILE("Failed configuring the simulation due to invalid values\n");
