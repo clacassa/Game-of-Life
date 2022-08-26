@@ -706,7 +706,7 @@ void SimulationWindow::on_button_max_clicked() {
 bool SimulationWindow::on_button_press_event(GdkEventButton * event)
 {
     Glib::RefPtr<Gdk::Window> ref_win(m_Area.get_window());
-    auto scroll = Gdk::Cursor::create(Gdk::CursorType::DOUBLE_ARROW);
+    auto scroll = Gdk::Cursor::create(Gdk::CursorType::FLEUR);
 	if(event->type == GDK_BUTTON_PRESS)
 	{
 		// raw mouse coordinates in the window frame
