@@ -3,23 +3,46 @@
 
 ## Dev notes
 
-TODO: Bundle the runtime DLLs and make them render the selected theme correctly.  
-    For some reason I have experienced unexpected errors such as **Gdk::PixBufError**  
-    or **Gtk::CssProviderError**, refusing to load the custom theme, when putting the dlls  
-    in the *bin* directory.   
+Last build: 2022/26/08  
+Evertything is now bundled in the repo, so everything should work fine now.  
 
 ## Installation
 
+- Extract the zip file in the directory of your choice.  
+- Create a Desktop shortcut targetting *installdir/bin/GameofLife.exe*, where *installdir/* is the location where  
+you extracted the zip file.  
+- The shortcut starts the program in the *installdir/bin/*. You have to edit this path to *installdir/*  
+so that the executable can find everything it needs to run (theme, icons, runtime libs...)  
+Right click on the shortcut, then go to Properties, then Startup directory.
+
+## Build
+
 As I've put a Makefile in the repo, I encourage you to build with **make**.  
 
-This GUI is made with GTK3.0 and the gtkmm C++ wrapper.  
-All the libraries on which they depend are in the *include* subdirectory.  
-All the runtime dlls are in the *bin* subdirectory.  
+The GUI is made with GTK3+ and the gtkmm C++ wrapper libraries.  
+All the libraries on which they depend are in the *include* subdirectory and   
+All the runtime dlls are in the *bin/* and *lib/gdk-pixbuf-2.0/2.10.0/*
 
-The second step is about the appearance of the GUI **(If you are on Windows, you can ignore this).**    
-In the file *./etc/gtk-3.0/settings.ini*:  
-If you are on MacOS, replace "Windows10" with "MacOS", at line 2.  
-This will set a convenient theme for mac.
-If you are on linux, delete this line.
+## Customization
+
+You can customize the appearance of the GUI by editing the file *etc/gtk-3.0/settings.ini*.  
+Just edit the value of **gtk-theme-name** as following:  
+To give a native look to the GUI,  
+- On MacOS: replace **Venta** with **MacOS**.  
+- On Linux: replace **Venta** with the name of your Desktop theme.  
+- On Windows: **Venta** should do the job for Windows 10, but you can try **Windows10-Acrylic** (contrasted).  
+
+If the native look is not you proprity, here is the full list of featured themes:  
+- MacOS
+- Skeuos-Green
+- Venta
+- Windows10-Acrylic
+- Orchis
+
+The themes are stored in *share/themes/* and all have a dark variant.  
+
+## Credits
+
+
 
 
