@@ -43,8 +43,8 @@ The themes are stored in *share/themes/* and all have a dark variant.
 
 ## Credits
 
-[MacOS](https://github.com/B00merang-Project/macOS)
-[Orchis](https://github.com/vinceliuice/Orchis-theme)
-[Skeuos-Green](https://github.com/daniruiz/skeuos-gtk)
-[Venta](https://www.gnome-look.org/p/1386774)
+[MacOS](https://github.com/B00merang-Project/macOS)  
+[Orchis](https://github.com/vinceliuice/Orchis-theme)  
+[Skeuos-Green](https://github.com/daniruiz/skeuos-gtk)  
+[Venta](https://www.gnome-look.org/p/1386774)  
 [Windows-10-Acrylic](https://github.com/B00merang-Project/Windows-10-Acrylic)
