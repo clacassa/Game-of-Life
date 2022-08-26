@@ -1,6 +1,8 @@
 
 # Game-of-Life
 
+**Conway's Game of Life**
+
 ## Dev notes
 
 Last build: 2022/26/08  
