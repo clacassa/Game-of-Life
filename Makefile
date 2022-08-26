@@ -24,7 +24,7 @@ OFILES = $(CXXFILES:.cc=.o)
 EXEDIR = ./bin
 
 # On Windows, start the program without a console in the background
-# and link an icon to it
+# and link an icon to itself so it appears in the taskbar
 ifeq ($(OS),Windows_NT)
 CXXFLAGS += -mwindows
 OFILES += ./res/my.res
