@@ -1079,8 +1079,8 @@ void SimulationWindow::create_refresh_scale() {
     m_Scale.add_mark(40, Gtk::POS_BOTTOM, "40");
     m_Scale.add_mark(50, Gtk::POS_BOTTOM, "50");
     m_Scale.set_value_pos(Gtk::POS_TOP);
-    m_Scale.set_show_fill_level(false);
-    m_Scale.set_has_origin(true);
+    m_Scale.set_show_fill_level(true);
+    m_Scale.set_has_origin(false);
     m_Scale.set_digits(0);
     m_Scale.set_round_digits(0);
     m_Scale.set_inverted(true);

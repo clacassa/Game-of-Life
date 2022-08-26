@@ -28,7 +28,6 @@
 //===========================================
 
 int main(int argc, char * argv[]) {
-
 	std::string filename("");
 	if (argc == 2) {
 		if (std::string(argv[1]).find_first_of("-") != 0) {
@@ -44,18 +43,15 @@ int main(int argc, char * argv[]) {
 	auto app = Gtk::Application::create(argc, argv, "com.github.clacassa.Game-of-Life");
 
 	// Uncomment this if you want the application to start in dark mode - need a recompilation
-		g_object_set(gtk_settings_get_default(),
-    			"gtk-application-prefer-dark-theme", TRUE, NULL);
-		set_dark_theme_on();
+	//	g_object_set(gtk_settings_get_default(),
+    //			"gtk-application-prefer-dark-theme", TRUE, NULL);
+	//	set_dark_theme_on();
 	// Uncomment this if you want the application to start in dark mode
 
 	// Set default properties for the main window
 	SimulationWindow window(filename);
 	window.set_default_size(window_size*1.05, window_size); // perfect w/h ratio
 	window.set_position(Gtk::WIN_POS_CENTER);
-	#ifndef _WIN32
-	window.set_default_icon_from_file("share/icons/forme_stable_3.ico");
-	#endif
 	window.set_default_icon_from_file("share/icons/forme_stable_3.ico");
 	window.set_resizable(true);
 	window.file_error_dialog();
