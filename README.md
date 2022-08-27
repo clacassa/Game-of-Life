@@ -6,7 +6,7 @@
 ## Dev notes
 
 Last build: 2022/26/08  
-Evertything is now bundled in the repo, so everything should work fine now. 
+Evertything is now bundled in the repo, so everything should work fine now.  
 Please note that the Stability Detection feature needs a real improvement; for the moment it just counts the number  
 of alive cells and compares it to the last four generations, so this only works for basic oscillators of period 5 and less.  
 I have to figure out another way to do this. It false-positive gliders btw...
@@ -22,11 +22,11 @@ Right click on the shortcut, then go to Properties, then Startup directory.
 
 ## Building the application
 
-As I've put a Makefile in the repo, I encourage you to build with **make**.  
+As I've put a Makefile in the repo, I encourage you to build with **make** from *installdir/*.  
 
-The GUI is made with GTK3+ and the gtkmm C++ wrapper libraries.  
-All the libraries on which they depend are in the *include* subdirectory and   
-All the runtime dlls are in the *bin/* and *lib/gdk-pixbuf-2.0/2.10.0/*
+The GUI is made with GTK3+ and the gtkmm C++ wrapper toolkits.
+The libraries on which they depend are in the *include* subdirectory and   
+All the runtime dlls are in the *bin/* and *lib/gdk-pixbuf-2.0/2.10.0/* directories.  
 
 ## Customization
 
