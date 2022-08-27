@@ -6,7 +6,7 @@
 ## Dev notes
 
 Last build: 2022/26/08  
-Evertything is now bundled in the repo, so everything should work fine now. 
+Evertything is now bundled in the repo, so everything should work fine now.  
 Please note that the Stability Detection feature needs a real improvement; for the moment it just counts the number  
 of alive cells and compares it to the last four generations, so this only works for basic oscillators of period 5 and less.  
 I have to figure out another way to do this. It false-positive gliders btw...
