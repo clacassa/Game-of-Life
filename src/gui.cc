@@ -426,6 +426,10 @@ void SimulationWindow::on_button_open_clicked() {
         updt_statusbar_coord();
         m_Label_Info.set_label("<span weight='bold' > Generation : " + std::to_string(val) + "</span>");
         m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "+ std::to_string(Conf::world_size));
+        if (Conf::world_size == world_size_min) decrsizeMi.set_sensitive(false);
+        if (Conf::world_size == world_size_max) incrsizeMi.set_sensitive(false);
+        if (Conf::world_size > world_size_min) decrsizeMi.set_sensitive(true);
+        if (Conf::world_size < world_size_max) incrsizeMi.set_sensitive(true);
 
         unsigned pos = filename.find_last_of('\\');
         std::string flnm = filename;
@@ -581,7 +585,11 @@ void SimulationWindow::on_downarrow_pressed() {
 }
 
 void SimulationWindow::on_button_increase_size_clicked() {
-    Conf::set_world_size(Conf::world_size + 50);
+    if (world_size_max - Conf::world_size < 50) {
+        Conf::set_world_size(world_size_max);
+    }else {
+        Conf::set_world_size(Conf::world_size + 50);
+    }
     if (Conf::world_size == world_size_max) {
         incrsizeMi.set_sensitive(false);
     }
@@ -594,7 +602,11 @@ void SimulationWindow::on_button_increase_size_clicked() {
 }
 
 void SimulationWindow::on_button_decrease_size_clicked() {
-    Conf::set_world_size(Conf::world_size - 50);
+    if (Conf::world_size - world_size_min < 50) {
+        Conf::set_world_size(world_size_min);
+    }else {
+        Conf::set_world_size(Conf::world_size - 50);
+    }
     if (Conf::world_size == world_size_min)  {
         decrsizeMi.set_sensitive(false);
     }

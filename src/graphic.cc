@@ -38,7 +38,7 @@ void graphic_draw_world(double xMax, double yMax, unsigned ref_color, bool show_
     (*ptcr)->move_to(0, 0);
     (*ptcr)->line_to(0, yMax-1);
     (*ptcr)->line_to(xMax-1, yMax-1);
-    (*ptcr)->line_to(xMax-1, 1);
+    (*ptcr)->line_to(xMax-1, 0);
     (*ptcr)->close_path();
     (*ptcr)->fill_preserve();
     (*ptcr)->stroke();
