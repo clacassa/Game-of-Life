@@ -17,7 +17,7 @@ you extracted the zip file.
 so that the executable can find everything it needs to run (theme, icons, runtime libs...)  
 Right click on the shortcut, then go to Properties, then Startup directory.
 
-## Build
+## Building the application
 
 As I've put a Makefile in the repo, I encourage you to build with **make**.  
 
@@ -45,8 +45,8 @@ The themes are stored in *share/themes/* and all have a dark variant.
 
 ## Credits
 
-[MacOS](https://github.com/B00merang-Project/macOS)  
-[Orchis](https://github.com/vinceliuice/Orchis-theme)  
-[Skeuos-Green](https://github.com/daniruiz/skeuos-gtk)  
-[Venta](https://www.gnome-look.org/p/1386774)  
-[Windows-10-Acrylic](https://github.com/B00merang-Project/Windows-10-Acrylic)
+- [MacOS](https://github.com/B00merang-Project/macOS)  
+- [Orchis](https://github.com/vinceliuice/Orchis-theme)  
+- [Skeuos-Green](https://github.com/daniruiz/skeuos-gtk)  
+- [Venta](https://www.gnome-look.org/p/1386774)  
+- [Windows-10-Acrylic](https://github.com/B00merang-Project/Windows-10-Acrylic)
