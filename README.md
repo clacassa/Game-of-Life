@@ -22,11 +22,11 @@ Right click on the shortcut, then go to Properties, then Startup directory.
 
 ## Building the application
 
-As I've put a Makefile in the repo, I encourage you to build with **make**.  
+As I've put a Makefile in the repo, I encourage you to build with **make** from *installdir/*.  
 
-The GUI is made with GTK3+ and the gtkmm C++ wrapper libraries.  
-All the libraries on which they depend are in the *include* subdirectory and   
-All the runtime dlls are in the *bin/* and *lib/gdk-pixbuf-2.0/2.10.0/*
+The GUI is made with GTK3+ and the gtkmm C++ wrapper toolkits.
+The libraries on which they depend are in the *include* subdirectory and   
+All the runtime dlls are in the *bin/* and *lib/gdk-pixbuf-2.0/2.10.0/* directories.  
 
 ## Customization
 
