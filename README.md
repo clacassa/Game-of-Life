@@ -1,7 +1,7 @@
 
 # Game-of-Life
 
-**Conway's Game of Life** GUI with various controls.
+**Conway's Game of Life** GUI written in C++.  
 
 ## Dev notes
 
