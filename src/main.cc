@@ -14,7 +14,7 @@
 
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ */
 
 #include "simulation.h"
 #include "gui.h"
@@ -50,7 +50,7 @@ int main(int argc, char * argv[]) {
 
 	// Set default properties for the main window
 	SimulationWindow window(filename);
-	window.set_default_size(window_size*1.05, window_size); // perfect w/h ratio
+	window.set_default_size(window_size*1.07, window_size); // perfect w/h ratio for FullHD screens
 	window.set_position(Gtk::WIN_POS_CENTER);
 	window.set_default_icon_from_file("share/icons/forme_stable_3.ico");
 	window.set_resizable(true);

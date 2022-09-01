@@ -14,7 +14,7 @@
 
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ */
 
 #ifndef GRAPHIC_GUI_H_INCLUDED
 #define GRAPHIC_GUI_H_INCLUDED

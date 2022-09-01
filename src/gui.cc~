@@ -14,7 +14,7 @@
 
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+*/
 
 #include "gui.h"
 #include "graphic_gui.h"
@@ -420,23 +420,21 @@ void SimulationWindow::on_button_open_clicked() {
         // Clear the grids of booleans
         init();
         // Read data and check for any error
-        if (read_file(filename)) {
+        read_file(filename);
 
-            set_default_frame();
-            updt_statusbar_coord();
-            m_Label_Info.set_label("<span weight='bold' > Generation : " + std::to_string(val) + "</span>");
-            m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "+ std::to_string(Conf::world_size));
-            if (Conf::world_size == world_size_min) decrsizeMi.set_sensitive(false);
-            if (Conf::world_size == world_size_max) incrsizeMi.set_sensitive(false);
-            if (Conf::world_size > world_size_min) decrsizeMi.set_sensitive(true);
-            if (Conf::world_size < world_size_max) incrsizeMi.set_sensitive(true);
+        set_default_frame();
+        updt_statusbar_coord();
+        m_Label_Info.set_label("<span weight='bold' > Generation : " + std::to_string(val) + "</span>");
+        m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "+ std::to_string(Conf::world_size));
+        if (Conf::world_size == world_size_min) decrsizeMi.set_sensitive(false);
+        if (Conf::world_size == world_size_max) incrsizeMi.set_sensitive(false);
+        if (Conf::world_size > world_size_min) decrsizeMi.set_sensitive(true);
+        if (Conf::world_size < world_size_max) incrsizeMi.set_sensitive(true);
 
-            unsigned pos = filename.find_last_of('\\');
-            std::string flnm = filename;
-            this->set_title(flnm.replace(0, pos + 1, "") + "  -  Game of Life");
-        }else {
-            file_error_dialog();
-        }
+        unsigned pos = filename.find_last_of('\\');
+        std::string flnm = filename;
+        this->set_title(flnm.replace(0, pos + 1, "") + "  -  Game of Life");
+        file_error_dialog();
     }
     m_Area.refresh();
 }
@@ -473,7 +471,6 @@ void SimulationWindow::error_dialog_open(std::string error_message) {
     error_dialog.set_icon_from_file("share/icons/notifications.ico");
     error_dialog.set_transient_for(*this);
     error_dialog.run();
-    filename = "";
     this->set_title("Game of Life");
 }
 
