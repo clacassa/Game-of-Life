@@ -28,17 +28,15 @@ You can build GoL Lab with **make** from the installation directory.
 ## Customization
 
 You can customize the appearance of the GUI by editing the file *etc/gtk-3.0/settings.ini*.  
-Just edit the value of the **gtk-theme-name** key as following:  
+Just edit the value of the **gtk-theme-name** key as following: 
+  
 To give a native look to the GUI,  
 - On MacOS: replace **Venta** with **MacOS**.  
 - On Linux: replace **Venta** with the name of your Desktop theme.  
 - On Windows: **Venta** should do the job for Windows 10, but you can try **Windows-10-Acrylic** (contrasted).  
 
-If the native look is not you proprity, here is the full list of featured themes:  
-- MacOS
+If the native look is not you proprity, you can try out these good loocking themes:  
 - Skeuos-Green
-- Venta
-- Windows-10-Acrylic
 - Orchis
 
 The themes are stored in *share/themes/* and all have a dark variant.  
