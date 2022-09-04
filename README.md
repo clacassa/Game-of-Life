@@ -13,25 +13,22 @@ I have to figure out another way to do this. It false-positive gliders btw...
 
 ## Installation
 
-- Extract the zip file in the directory of your choice.  
-- Create a Desktop shortcut targetting *installdir/bin/GameofLife.exe*, where *installdir/* is the location where  
-you extracted the zip file.  
-- The shortcut starts the program in the *installdir/bin/*. You have to edit this path to *installdir/*  
-so that the executable can find everything it needs to run (theme, icons, runtime libs...)  
-Right click on the shortcut, then go to Properties, then Startup directory.
+- From the installer (Windows only)
+  - Just follow the instructions of the wizard.
+
+- From this repo (zip file)
+  - Extract the zip file to the directory of your choice.  
+  - You have to run the executable from the installation directory, not from the bin subdirectory. Otherwise, the executable
+    won't find the themes, icons and other dll files.
 
 ## Building the application
 
-As I've put a Makefile in the repo, I encourage you to build with **make** from *installdir/*.  
-
-The GUI is made with GTK3+ and the gtkmm C++ wrapper toolkits.
-The libraries on which they depend are in the *include* subdirectory and   
-All the runtime dlls are in the *bin/* and *lib/gdk-pixbuf-2.0/2.10.0/* directories.  
+You can build GoL Lab with **make** from the installation directory.  
 
 ## Customization
 
 You can customize the appearance of the GUI by editing the file *etc/gtk-3.0/settings.ini*.  
-Just edit the value of **gtk-theme-name** as following:  
+Just edit the value of the **gtk-theme-name** key as following:  
 To give a native look to the GUI,  
 - On MacOS: replace **Venta** with **MacOS**.  
 - On Linux: replace **Venta** with the name of your Desktop theme.  
