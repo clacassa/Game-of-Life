@@ -1,5 +1,5 @@
 
-# Game-of-Life
+# GoL Lab
 
 **Conway's Game of Life** GUI written in C++.  
 
