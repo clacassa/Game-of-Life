@@ -35,7 +35,7 @@ To give a native look to the GUI,
 - On Linux: replace **Venta** with the name of your Desktop theme.  
 - On Windows: **Venta** should do the job for Windows 10, but you can try **Windows-10-Acrylic** (contrasted).  
 
-If the native look is not you proprity, you can try out these good loocking themes:  
+If the native look is not you proprity, feel free to try out these good loocking themes:  
 - Skeuos-Green
 - Orchis
 
