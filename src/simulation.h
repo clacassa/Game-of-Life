@@ -32,6 +32,7 @@ bool read_file(std::string filename);
 void line_decoding(std::string line);
 void error(Error_reading code);
 unsigned get_error_id();
+unsigned get_alive();
 
 void display();
 void init();

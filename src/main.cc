@@ -40,7 +40,7 @@ int main(int argc, char * argv[]) {
 
 	srand((unsigned) time(0));
 
-	auto app = Gtk::Application::create(argc, argv, "com.github.clacassa.Game-of-Life");
+	auto app = Gtk::Application::create(argc, argv, "com.github.clacassa.GoL-Lab");
 
 	// Uncomment this if you want the application to start in dark mode - need a recompilation
 	//	g_object_set(gtk_settings_get_default(),
@@ -56,7 +56,7 @@ int main(int argc, char * argv[]) {
 	window.set_resizable(true);
 	window.file_error_dialog();
 
-	if (filename == "") window.set_title("Game of Life");
+	if (filename == "") window.set_title(PROGRAM_NAME);
 	else {
 		if (filename.find_last_of('\\') != std::string::npos) {
 			unsigned pos = filename.find_last_of('\\');
@@ -66,7 +66,7 @@ int main(int argc, char * argv[]) {
 			unsigned pos = filename.find_last_of('/');
 			filename = filename.replace(0, pos + 1, "");
 		}
-		window.set_title(filename + "  -  Game of Life");
+		window.set_title(filename + "  -  GoL Lab");
 	}
 
 	return app->run(window);

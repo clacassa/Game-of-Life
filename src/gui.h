@@ -65,11 +65,20 @@ private:
     bool empty;
 };
 
+class ModelColumns : public Gtk::TreeModel::ColumnRecord {
+public:
+    ModelColumns() { add(m_col_id); add(m_col_name); }
+
+    Gtk::TreeModelColumn<int> m_col_id;
+    Gtk::TreeModelColumn<Glib::ustring> m_col_name;
+};
+
 //===========================================
 
 class SimulationWindow : public Gtk::Window {
 public:
     SimulationWindow(std::string __filename);
+    virtual ~SimulationWindow();
     // Display an error message if the file passed as argument in CLI is unexploitable
     void file_error_dialog();
 protected:
@@ -81,6 +90,7 @@ protected:
     void create_refresh_scale();
     void create_control_buttons();
     void create_StatusBar();
+    void create_ComboBoxes();
     void zoom_frame();
     void updt_statusbar_coord();
     void reset_max_canon();
@@ -88,6 +98,9 @@ protected:
     // Error dialog relative to file opening or reading
     void error_dialog_open(std::string error_message);
 
+    void read_settings();
+
+    // -----Signal handlers-----
     void on_button_open_clicked();
     void on_button_save_clicked();
     void on_button_saveas_clicked();
@@ -116,6 +129,7 @@ protected:
     void on_checkbutton_dark_checked();
     void on_checkbutton_grid_checked();
     void on_checkbutton_fade_checked();
+    void on_button_colorscheme_clicked();
 
     void on_event_add_timer();
     void on_event_delete_timer();
@@ -142,8 +156,13 @@ protected:
     // set a pencil as cursor for the mouse above the drawing area
     bool on_enter_notify_event(GdkEventCrossing * crossing_event);
 
-    MyArea m_Area;
+    void on_combo_light_changed();
+    void on_combo_dark_changed();
 
+    MyArea m_Area;
+    ModelColumns m_Columns;
+
+    // -----Child widgets-----
     Gtk::MenuBar m_MenuBar;
     Gtk::MenuItem fileMi;
     Gtk::MenuItem viewMi;
@@ -163,6 +182,7 @@ protected:
     Gtk::CheckMenuItem showgridMi;
     Gtk::CheckMenuItem fadeMi;
     Gtk::CheckMenuItem darkmode;
+    Gtk::MenuItem colorschemeMi;
     Gtk::CheckMenuItem experimentMi;
     Gtk::MenuItem simsizeMi;
     Gtk::Menu m_SimsizeMenu;
@@ -171,7 +191,7 @@ protected:
     Gtk::MenuItem helpMi;
     Gtk::MenuItem aboutMi;
     Gtk::SeparatorMenuItem file_sepMi;
-    Gtk::SeparatorMenuItem view_sepMi;
+    Gtk::SeparatorMenuItem view_sepMi, view_sepMi2;
 
     Gtk::Separator m_Separator;
     Gtk::Separator m_Sep;
@@ -182,10 +202,15 @@ protected:
     Gtk::Button m_Button_Start, m_Button_Step, m_Button_Reset, m_Button_Clear, m_Button_Random;
     Gtk::ToggleButton m_Button_Canon, m_Button_Max;
     Gtk::Scale m_Scale;
-    Gtk::Label m_Label_Info, m_Label_Test, m_Label_Theme, m_LabelSize, m_LabelZoom, m_LabelCoordinates;
+    Gtk::Label m_Label_Info, m_Label_Test, m_Label_Theme, m_LabelSize, m_LabelZoom, m_LabelCoordinates, m_Label_Population;
 
     Gtk::Statusbar m_StatusBar;
 
+    Gtk::ComboBox m_ComboLight, m_ComboDark;
+    Gtk::CellRendererText m_cell;
+    Glib::RefPtr<Gtk::ListStore> m_refTreeModel;
+
+    // -----Attributes-----
     bool timer_added;
     bool disconnect;
     bool experiment;

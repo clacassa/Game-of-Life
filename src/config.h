@@ -21,6 +21,8 @@
 
 #include <iostream>
 
+#define PROGRAM_NAME "GoL Lab"
+
 constexpr unsigned window_size(850);    // window size in pixels
 constexpr unsigned cell_size(1);
 constexpr unsigned reserve(300);    // At startup, the world is a square of side reserve.

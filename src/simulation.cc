@@ -32,7 +32,8 @@ Grid grid(reserve, std::vector<bool>(reserve));
 Grid updated_grid(reserve, std::vector<bool>(reserve));
 std::vector<Pos> dead, dead2, dead3, dead4;
 
-static int nb_alive(0);
+static unsigned nb_alive(0);
+static int nb_born(0);
 static int past_alive(0);
 static int past_2_alive(0);
 static int past_3_alive(0);
@@ -163,11 +164,11 @@ void line_decoding(std::string line) {
 
 void save_file(std::string filename) {
     std::ofstream saved_file;
-    unsigned nb_alive__(0);
+    unsigned nb_born__(0);
     
     for (auto e : updated_grid) {
         for (auto f : e) {
-            if (f) ++nb_alive__;
+            if (f) ++nb_born__;
         }
     }
 
@@ -178,7 +179,7 @@ void save_file(std::string filename) {
     saved_file << "#\tworld size:\n";
     saved_file << Conf::world_size << "\n\n";
     saved_file << "#\talive cells:\n";
-    saved_file << nb_alive__ << "\n\n";
+    saved_file << nb_born__ << "\n\n";
     saved_file << "#\tcoordinates:\n";
     for (unsigned i(0); i < updated_grid.size(); ++i) {
         for (unsigned j(0); j < updated_grid[i].size(); ++j) {
@@ -220,6 +221,10 @@ unsigned get_error_id() {
     return error_id;
 }
 
+unsigned get_alive() {
+    return nb_alive;
+}
+
 void adjust_bool_grid() {
     if (Conf::world_size < grid.size()) {
         unsigned len(grid.size());
@@ -252,12 +257,19 @@ void adjust_bool_grid() {
 void new_birth(unsigned x, unsigned y) {
     if (!updated_grid[Conf::world_size - 1 - y][x]) {
         updated_grid[Conf::world_size - 1 - y][x] = true;
-        ++nb_alive;
+        ++nb_born;
+        if (!grid[Conf::world_size-1-y][x]) {
+            ++nb_alive;
+        }
     }
+    
 }
 
 void new_death(unsigned x, unsigned y) {
-    updated_grid[Conf::world_size - 1 - y][x] = false;
+    if (updated_grid[Conf::world_size - 1 - y][x]) {
+        updated_grid[Conf::world_size - 1 - y][x] = false;
+        --nb_alive;
+    }
 }
 
 void birth_test(unsigned x, unsigned y) {
@@ -268,12 +280,13 @@ void birth_test(unsigned x, unsigned y) {
     }else {
         if (neighbours(x, y) == 2 or neighbours(x, y) == 3) {
             new_birth(x, y);
-            --nb_alive;
+            --nb_born;
         }else {
             if (fade_effect_enabled) {
                 dead.push_back({x, y});
             }
             ++nb_dead;
+            --nb_alive;
         }
     }
 }
@@ -354,8 +367,8 @@ bool update(Mode mode) {
     past_4_alive = past_3_alive;
     past_3_alive = past_2_alive;
     past_2_alive = past_alive;
-    past_alive = nb_alive;
-    nb_alive = 0;
+    past_alive = nb_born;
+    nb_born = 0;
     nb_dead = 0;
     past_stable = stable;
     stable = false;
@@ -377,13 +390,13 @@ bool update(Mode mode) {
     }
     // 5-perdiodic oscillations detection
     if (mode == EXPERIMENTAL) {
-        if (nb_alive == past_alive && past_alive == past_2_alive && past_2_alive == past_3_alive) {
+        if (nb_born == past_alive && past_alive == past_2_alive && past_2_alive == past_3_alive) {
             stable = true;
         }
-        if (nb_alive == past_2_alive && past_alive == past_3_alive && past_2_alive == past_4_alive) {
+        if (nb_born == past_2_alive && past_alive == past_3_alive && past_2_alive == past_4_alive) {
             stable = true;
         }
-        if (nb_alive == past_3_alive && past_alive == past_4_alive && past_2_alive == past_5_alive) {
+        if (nb_born == past_3_alive && past_alive == past_4_alive && past_2_alive == past_5_alive) {
             stable = true;
         }
         if (stable && past_stable) {
@@ -453,6 +466,8 @@ void init() {
     dead2.clear();
     dead3.clear();
     dead4.clear();
+
+    nb_alive = 0;
 }
 
 void toggle_fade_effect() {

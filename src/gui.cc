@@ -36,8 +36,8 @@ static void orthographic_projection(const Cairo::RefPtr<Cairo::Context>& cr,
 static unsigned val(0);
 static unsigned zoom(100);
 static unsigned z_ratio(100);
-// The background theme: 1 for light, 0 for dark
-static unsigned _theme_(1);
+// Variable that manages the theme variant (0 for light, 1 for dark)
+static unsigned _theme_(0);
 
 static bool show_grid(false);
 
@@ -131,7 +131,7 @@ static void orthographic_projection(const Cairo::RefPtr<Cairo::Context>& cr,
 
 void MyArea::draw_frame(const Cairo::RefPtr<Cairo::Context>& cr) {
 
-    if (_theme_) {
+    if (!_theme_) {
         cr->set_source_rgb(gray1.r, gray1.g, gray1.b);
     }else {
         cr->set_source_rgb(0.1, 0.1, 0.1);
@@ -148,8 +148,8 @@ bool MyArea::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
         adjustFrame();
         orthographic_projection(cr, frame);
 
-        graphic_draw_world(Conf::world_size, Conf::world_size, _theme_, show_grid);
-        draw_cells(1-_theme_);
+        graphic_draw_world(Conf::world_size, Conf::world_size, _theme_, show_grid, default_frame.xMax-default_frame.xMin);
+        draw_cells(_theme_);
         refresh();
     }
     return true;
@@ -172,9 +172,10 @@ SimulationWindow::SimulationWindow(std::string __filename)
     zoominMi("Zoom in"),
     zoomoutMi("Zoom out"),
     resetzoomMi("Reset zoom"),
-    showgridMi("Show grid"),
-    fadeMi("Fade effect"),
-    darkmode("Dark theme"),
+    showgridMi("Show Grid"),
+    fadeMi("Fade Effect"),
+    darkmode("Dark Theme"),
+    colorschemeMi("Color Scheme"),
     experimentMi("Stability Detection (S.D.)"),
     simsizeMi("World size"),
     incrsizeMi("Extend"),
@@ -233,10 +234,16 @@ SimulationWindow::SimulationWindow(std::string __filename)
         create_refresh_scale();
         create_control_buttons();
         create_StatusBar();
+        create_ComboBoxes();
 
-        if (!_theme_) {
+        if (_theme_) {
             darkmode.set_active(true);
         }
+        if (showgridMi.get_active()) {
+            show_grid = true;
+        }
+
+        read_settings();
 
         show_all_children();
     }
@@ -311,7 +318,7 @@ void SimulationWindow::file_modified() {
 }
 
 void set_dark_theme_on() {
-    _theme_ = 0;
+    _theme_ = 1;
 }
 
 void SimulationWindow::on_button_quit_clicked() {
@@ -365,6 +372,7 @@ void SimulationWindow::on_button_reset_clicked() {
     set_default_frame();
     this->set_title(this->get_title().replace(0, 1, ""));
     m_Label_Info.set_label("<b>Generation : " + std::to_string(val) + "</b>");
+    m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
     m_LabelSize.set_text(std::to_string(Conf::world_size) + "x" + std::to_string(Conf::world_size));
     reset_max_canon();
 }
@@ -372,15 +380,17 @@ void SimulationWindow::on_button_reset_clicked() {
 void SimulationWindow::on_button_clear_clicked() {
     val = 0;
     init();
-    this->set_title("Game of Life");
+    this->set_title(PROGRAM_NAME);
     m_Label_Info.set_label("<b>Generation : " + std::to_string(val) + "</b>");
+    m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
     m_Button_Reset.set_sensitive(false);
     saveMi.set_sensitive(false);
     filename = "";
     if (experiment) {
+        m_Label_Test.set_visible(true);
         m_Label_Test.set_label("<span foreground='blue'>S.D. ON</span>");
     }else {
-        m_Label_Test.set_label("S.D. OFF");
+        m_Label_Test.set_visible(false);
     }
     reset_max_canon();
 }
@@ -390,9 +400,11 @@ void SimulationWindow::on_button_random_clicked() {
     reset_max_canon();
     file_modified();
     if (experiment) {
+        m_Label_Test.set_visible(true);
         m_Label_Test.set_label("<span foreground='blue'>S.D. ON</span>");
+        m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
     }else {
-        m_Label_Test.set_label("S.D. OFF");
+        m_Label_Test.set_visible(false);
     }
     
     // Randomly fill half of the grid
@@ -422,9 +434,9 @@ void SimulationWindow::on_button_open_clicked() {
         // Read data and check for any error
         if (read_file(filename)) {
 
-            set_default_frame();
-            updt_statusbar_coord();
+            on_button_reset_zoom_clicked();
             m_Label_Info.set_label("<span weight='bold' > Generation : " + std::to_string(val) + "</span>");
+            m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
             m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "+ std::to_string(Conf::world_size));
             if (Conf::world_size == world_size_min) decrsizeMi.set_sensitive(false);
             if (Conf::world_size == world_size_max) incrsizeMi.set_sensitive(false);
@@ -433,11 +445,13 @@ void SimulationWindow::on_button_open_clicked() {
 
             unsigned pos = filename.find_last_of('\\');
             std::string flnm = filename;
-            this->set_title(flnm.replace(0, pos + 1, "") + "  -  Game of Life");
+            this->set_title(flnm.replace(0, pos + 1, "") + "  -  " + PROGRAM_NAME);
         }else {
             file_error_dialog();
         }
     }
+    saveMi.set_sensitive(false);
+    m_Button_Reset.set_sensitive(false);
     m_Area.refresh();
 }
 
@@ -461,7 +475,7 @@ void SimulationWindow::file_error_dialog() {
 void SimulationWindow::error_dialog_open(std::string error_message) {
     Gtk::MessageDialog error_dialog(error_message, true, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
     // Font options
-    if (_theme_) {
+    if (!_theme_) {
         error_dialog.set_message("<span size='large' foreground='#000099' letter_spacing='1024'>"
                         + error_message + "</span>", true);
     }else {
@@ -474,7 +488,7 @@ void SimulationWindow::error_dialog_open(std::string error_message) {
     error_dialog.set_transient_for(*this);
     error_dialog.run();
     filename = "";
-    this->set_title("Game of Life");
+    this->set_title(PROGRAM_NAME);
 }
 
 void SimulationWindow::on_button_save_clicked() {
@@ -501,9 +515,10 @@ void SimulationWindow::on_button_saveas_clicked() {
 void SimulationWindow::on_button_test_clicked() {
     if (experiment) {
         experiment = false;
-        m_Label_Test.set_label("S.D. OFF");
+        m_Label_Test.set_visible(false);
     }else {
         experiment = true;
+        m_Label_Test.set_visible(true);
         m_Label_Test.set_label("<span foreground='blue'>S.D. ON</span>");
     }
 }
@@ -626,11 +641,69 @@ void SimulationWindow::on_checkbutton_dark_checked() {
     if (!darkmode.get_active()) {
         g_object_set(gtk_settings_get_default(),
     			"gtk-application-prefer-dark-theme", FALSE, NULL);
-        _theme_ = 1;
+        _theme_ = 0;
     }else {
         g_object_set(gtk_settings_get_default(),
     			"gtk-application-prefer-dark-theme", TRUE, NULL);
-        _theme_ = 0;
+        _theme_ = 1;
+    }
+}
+
+void SimulationWindow::on_button_colorscheme_clicked() {
+    Gtk::Dialog color_dial("Select Color Scheme", *this, Gtk::DIALOG_MODAL);
+    auto carea = color_dial.get_content_area();
+
+    // Main horizontal box
+    Gtk::HBox hbox(false, 10);
+    hbox.set_border_width(10);
+    hbox.set_valign(Gtk::ALIGN_CENTER);
+    // Frames
+    Gtk::Frame light("Light Theme");
+    light.set_valign(Gtk::ALIGN_CENTER);
+    Gtk::Frame dark("Dark Theme");
+    dark.set_valign(Gtk::ALIGN_CENTER);
+
+    // ComboBox adjustments
+    m_ComboLight.set_border_width(2);
+    m_ComboLight.set_valign(Gtk::ALIGN_CENTER);
+    m_ComboLight.set_halign(Gtk::ALIGN_START);
+    m_ComboDark.set_border_width(2);
+    m_ComboDark.set_valign(Gtk::ALIGN_CENTER);
+    m_ComboDark.set_halign(Gtk::ALIGN_START);
+
+    light.add(m_ComboLight);
+    dark.add(m_ComboDark);
+
+    hbox.pack_start(light);
+    hbox.pack_start(dark);
+    carea->pack_start(hbox);
+    carea->show_all_children();
+
+    color_dial.set_transient_for(*this);
+    color_dial.run();
+}
+
+void SimulationWindow::on_combo_light_changed() {
+    const auto iter = m_ComboLight.get_active();
+    if (iter) {
+        const auto row = *iter;
+        if (row) {
+            int id = row[m_Columns.m_col_id];
+            Glib::ustring name = row[m_Columns.m_col_name];
+            graphic_change_light_color_scheme(id-1);
+        }
+    }
+}
+
+void SimulationWindow::on_combo_dark_changed() {
+    const auto iter = m_ComboDark.get_active();
+    if (iter) {
+        const auto row = *iter;
+        if (row) {
+            int id = row[m_Columns.m_col_id];
+            Glib::ustring name = row[m_Columns.m_col_name];
+            graphic_change_dark_color_scheme(id-1);
+        }
     }
 }
 
@@ -673,10 +746,10 @@ void SimulationWindow::on_button_help_clicked() {
 
 void SimulationWindow::on_button_about_clicked() {
 
-    Gtk::AboutDialog about_dial(true);
+    Gtk::AboutDialog about_dial;
     std::vector<Glib::ustring> authors(1, "Cyprien Lacassagne");
 
-    about_dial.set_program_name("Game of Life");
+    about_dial.set_program_name(PROGRAM_NAME);
     about_dial.set_authors(authors);
     about_dial.set_copyright("Copyright (C) 2022 Cyprien Lacassagne");
     about_dial.set_website("https://github.com/clacassa/Game-of-Life");
@@ -745,6 +818,7 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
             int delta_y = default_frame.yMax-default_frame.yMin;
 
             if (x < (int)Conf::world_size && y < (int)Conf::world_size) {
+                m_LabelCoordinates.set_text("x : " + std::to_string(x) + "    y : " + std::to_string(y));
                 switch (event->button)
                 {
                 case 1:
@@ -777,6 +851,7 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
                 }
                 m_Area.refresh();
                 file_modified();
+                m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
             }
 		}
 	}
@@ -788,6 +863,7 @@ bool SimulationWindow::on_button_release_event(GdkEventButton * event) {
     auto pencil = Gdk::Cursor::create(Gdk::CursorType::PENCIL);
     ref_win->set_cursor(pencil);
     button_type = NONE;
+    m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
     return true;
 }
 
@@ -818,6 +894,7 @@ bool SimulationWindow::on_motion_notify_event(GdkEventMotion * event) {
         int delta_y = default_frame.yMax-default_frame.yMin;
 
         if (x < (int)Conf::world_size && y < (int)Conf::world_size && x >= 0 && y >= 0) {
+            m_LabelCoordinates.set_text("x : " + std::to_string(x) + "    y : " + std::to_string(y));
             switch (button_type)
             {
             case LEFT:
@@ -843,6 +920,7 @@ bool SimulationWindow::on_motion_notify_event(GdkEventMotion * event) {
                 break;
             }
             m_Area.refresh();
+            m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
         }
     }
     return true;
@@ -897,19 +975,27 @@ bool SimulationWindow::on_timeout() {
             Glib::RefPtr<Gtk::CssProvider> css_provider = Gtk::CssProvider::create();
             css_provider->load_from_data("button {background-image: image(green);}");
             m_Button_Start.get_style_context()->add_provider(css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
-            
+            m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
+            if (val < 4)
+                m_Label_Info.set_label("<b>Generation : " + std::to_string(0) + "</b>");
+            else
+                m_Label_Info.set_label("<b>Generation : " + std::to_string(val-4) + "</b>");
             // Stop the timer
             on_event_delete_timer();            
         }else {
+            m_Label_Test.set_visible(true);
             m_Label_Test.set_label("<span foreground='blue'>S.D. ON</span>");
             ++val;
+            m_Label_Info.set_label("<b>Generation : " + std::to_string(val) + "</b>");
+            m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
         }
     }else {
         update();
-        m_Label_Test.set_label("S.D. OFF");
+        m_Label_Test.set_visible(false);
         ++val;
+        m_Label_Info.set_label("<b>Generation : " + std::to_string(val) + "</b>");
+        m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
     }
-    m_Label_Info.set_label("<b>Generation : " + std::to_string(val) + "</b>");
     file_modified();
     m_Area.refresh();
     return true;
@@ -979,6 +1065,8 @@ void SimulationWindow::create_MenuBar() {
     m_ViewMenu.append(showgridMi);
     m_ViewMenu.append(fadeMi);
     m_ViewMenu.append(darkmode);
+    m_ViewMenu.append(view_sepMi2);
+    m_ViewMenu.append(colorschemeMi);
     m_MenuBar.append(toolsMi);
     toolsMi.set_submenu(m_ToolsMenu);
     m_ToolsMenu.append(experimentMi);
@@ -1021,7 +1109,7 @@ void SimulationWindow::MenuBar_signals_hdl() {
     resetzoomMi.signal_activate().connect(sigc::mem_fun(*this,
             &SimulationWindow::on_button_reset_zoom_clicked));
 
-    showgridMi.set_active(false);
+    showgridMi.set_active(true);
     showgridMi.signal_activate().connect(sigc::mem_fun(*this,
             &SimulationWindow::on_checkbutton_grid_checked));
 
@@ -1032,6 +1120,9 @@ void SimulationWindow::MenuBar_signals_hdl() {
     darkmode.set_active(false);
     darkmode.signal_activate().connect(sigc::mem_fun(*this,
             &SimulationWindow::on_checkbutton_dark_checked));
+
+    colorschemeMi.signal_activate().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_button_colorscheme_clicked));
 
     experimentMi.set_active(false);
     experimentMi.signal_activate().connect(sigc::mem_fun(*this,
@@ -1072,6 +1163,8 @@ void SimulationWindow::MenuBar_accelerators() {
     zoomoutMi.add_accelerator("activate", accel_group, GDK_KEY_minus,
                             Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     resetzoomMi.add_accelerator("activate", accel_group, GDK_KEY_0,
+                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    colorschemeMi.add_accelerator("activate", accel_group, GDK_KEY_c,
                             Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     incrsizeMi.add_accelerator("activate", accel_group, GDK_KEY_Page_Up,
                             Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
@@ -1173,8 +1266,12 @@ void SimulationWindow::create_StatusBar() {
     m_Label_Info.set_halign(Gtk::ALIGN_END);
     m_Label_Info.set_hexpand(false);
     m_Label_Info.set_use_markup(true);
+    m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
+    m_Label_Population.set_halign(Gtk::ALIGN_END);
+    m_Label_Population.set_hexpand(false);
+    m_Label_Population.set_use_markup(true);
 
-    m_Label_Test.set_label("S.D. OFF");
+    m_Label_Test.set_visible(false);
     m_Label_Test.set_use_markup(true);
 
     // Create StatusBar
@@ -1182,8 +1279,133 @@ void SimulationWindow::create_StatusBar() {
     m_StatusBar.pack_end(m_LabelZoom);
     m_StatusBar.pack_end(m_LabelCoordinates);
     m_StatusBar.pack_end(m_Label_Info);
+    m_StatusBar.pack_end(m_Label_Population);
     m_StatusBar.pack_end(m_Label_Test);
     m_StatusBar.set_valign(Gtk::ALIGN_END);
     m_StatusBar.set_vexpand(false);
     m_StatusBar.set_halign(Gtk::ALIGN_BASELINE);
+}
+
+void SimulationWindow::create_ComboBoxes() {
+    m_refTreeModel = Gtk::ListStore::create(m_Columns);
+    m_ComboLight.set_model(m_refTreeModel);
+    m_ComboDark.set_model(m_refTreeModel);
+
+    // Fill combo tree model
+    auto iter = m_refTreeModel->append();
+    auto row = *iter;
+    
+    row[m_Columns.m_col_id] = 1;
+    row[m_Columns.m_col_name] = "DefaultLight";
+    m_ComboLight.set_active(iter);
+
+    iter = m_refTreeModel->append();
+    row = *iter;
+    row[m_Columns.m_col_id] = 2;
+    row[m_Columns.m_col_name] = "DefaultDark";
+    m_ComboDark.set_active(iter);
+
+    row = *(m_refTreeModel->append());
+    row[m_Columns.m_col_id] = 3;
+    row[m_Columns.m_col_name] = "Jade";
+
+    row = *(m_refTreeModel->append());
+    row[m_Columns.m_col_id] = 4;
+    row[m_Columns.m_col_name] = "Basalt";
+
+    row = *(m_refTreeModel->append());
+    row[m_Columns.m_col_id] = 5;
+    row[m_Columns.m_col_name] = "Asphalt";
+
+    row = *(m_refTreeModel->append());
+    row[m_Columns.m_col_id] = 6;
+    row[m_Columns.m_col_name] = "Albaster";
+
+    row = *(m_refTreeModel->append());
+    row[m_Columns.m_col_id] = 7;
+    row[m_Columns.m_col_name] = "Deep Blue";
+    
+    // Add the model columns to combo
+    m_ComboLight.pack_start(m_Columns.m_col_id);
+    m_ComboLight.pack_start(m_Columns.m_col_name);
+
+    m_ComboLight.pack_start(m_cell);
+
+    m_ComboLight.signal_changed().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_combo_light_changed));
+
+    m_ComboDark.pack_start(m_Columns.m_col_id);
+    m_ComboDark.pack_start(m_Columns.m_col_name);
+
+    m_ComboDark.pack_start(m_cell);
+
+    m_ComboDark.signal_changed().connect(sigc::mem_fun(*this,
+            &SimulationWindow::on_combo_dark_changed));
+}
+
+void SimulationWindow::read_settings() {
+    GKeyFile *key_file;
+    GError *error;
+
+    gint color_scheme_light;
+    gint color_scheme_dark;
+
+    key_file = g_key_file_new();
+    error = NULL;
+
+    if (!g_key_file_load_from_file(key_file,
+                                   "etc/gtk-3.0/settings.ini",
+                                   G_KEY_FILE_KEEP_COMMENTS,
+                                   &error))
+    {
+        g_debug("%s", error->message);
+    }
+    else {
+        color_scheme_light = g_key_file_get_integer(key_file,
+                                                   "Preferences",
+                                                   "color-scheme-light",
+                                                   &error);
+        color_scheme_dark = g_key_file_get_integer(key_file,
+                                                  "Preferences",
+                                                  "color-scheme-dark",
+                                                  &error);
+
+        m_ComboLight.set_active(color_scheme_light);
+        m_ComboDark.set_active(color_scheme_dark);
+    }
+}
+
+SimulationWindow::~SimulationWindow() {
+
+    std::ifstream inFile("etc/gtk-3.0/settings.ini");
+    std::ofstream outFile;
+    std::string line;
+    bool found = false;
+
+    outFile.open("etc/gtk-3.0/temp.ini");
+
+    if (!inFile.fail()) {
+        while (!inFile.eof()) {
+            getline(inFile, line);
+            if (line.find("color-scheme-light") != std::string::npos ||
+                line.find("color-scheme-dark") != std::string::npos) {
+                    found = true;
+                    continue;
+            }
+            outFile << line;
+            if (!found) {
+                outFile << "\n";
+            }
+        }
+    }
+    outFile << "color-scheme-light=" << m_ComboLight.get_active_row_number() << "\n";
+    outFile << "color-scheme-dark=" << m_ComboDark.get_active_row_number() << "\n";
+
+    outFile.close();
+    inFile.close();
+
+    char settings[] = "etc/gtk-3.0/settings.ini";
+    char temp[] = "etc/gtk-3.0/temp.ini";
+    std::remove(settings);
+    std::rename(temp, settings);
 }
