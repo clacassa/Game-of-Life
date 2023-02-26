@@ -1,5 +1,5 @@
 /*
- *  config.h -- GameofLife -- GUI with various options and view controls
+ *  config.h -- GoL Lab -- GUI with various options and view controls
  *  Copyright (C) 2022 Cyprien Lacassagne
 
  *  This program is free software: you can redistribute it and/or modify
@@ -20,8 +20,15 @@
 #define CONFIG_H
 
 #include <iostream>
+#include <string>
 
-#define PROGRAM_NAME "GoL Lab"
+const std::string PROGRAM_NAME("GoL Lab");
+const std::string PROGRAM_VERSION("0.2.1");
+const std::string PROGRAM_AUTHOR("Cyprien Lacassagne");
+const std::string PROGRAM_ICON("share/icons/gol_lab.ico");
+
+const std::string PATTERNS_DIR("patterns/");
+const std::string SETTINGS_INI_FILE("etc/gtk-3.0/settings.ini");
 
 constexpr unsigned window_size(850);    // window size in pixels
 constexpr unsigned cell_size(1);
@@ -30,16 +37,19 @@ constexpr unsigned reserve(300);    // At startup, the world is a square of side
                                     // This value must be included between world_size_min
                                     // and world_size_max
 
-constexpr unsigned world_size_max(500); // Upper limit for the side of the world.
+constexpr unsigned world_size_max(2000); // Upper limit for the side of the world.
                                         // Feel free to change it
 constexpr unsigned world_size_min(50);
 constexpr unsigned startup_timeout_value(30);
+constexpr unsigned idle_timeout(5);
 
 constexpr unsigned dialog_button_margin(200);
+constexpr float ghost_color(0.6);
 
 class Conf {
 public:
     static unsigned world_size;
+    static unsigned world_y_max;
     static void set_world_size(unsigned wsize);
 };
 

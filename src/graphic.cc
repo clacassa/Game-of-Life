@@ -1,5 +1,5 @@
 /*
- *  graphic.cc -- GameofLife -- GUI with various options and view controls
+ *  graphic.cc -- GoL Lab -- GUI with various options and view controls
  *  Copyright (C) 2022 Cyprien Lacassagne
 
  *  This program is free software: you can redistribute it and/or modify
@@ -83,14 +83,16 @@ void graphic_draw_world(double xMax, double yMax, unsigned ref_color, bool show_
     }
 }
 
-void graphic_draw_cell(unsigned x, unsigned y, unsigned ref_color) {
-    (*ptcr)->set_source_rgb(current_color_scheme[ref_color].fg.r, current_color_scheme[ref_color].fg.g,
-                                                      current_color_scheme[ref_color].fg.b);
+void graphic_draw_cell(unsigned x, unsigned y, unsigned ref_color, 
+                       float fg_r_offset, float fg_g_offset, float fg_b_offset) {
+    (*ptcr)->set_source_rgb(current_color_scheme[ref_color].fg.r+fg_r_offset, 
+                            current_color_scheme[ref_color].fg.g+fg_g_offset,
+                            current_color_scheme[ref_color].fg.b+fg_b_offset);
     (*ptcr)->set_line_width(0.0001);
-    (*ptcr)->move_to(x-cell_size/2., y-cell_size/2.);
-    (*ptcr)->line_to(x-cell_size/2., y+cell_size/2.);
-    (*ptcr)->line_to(x+cell_size/2., y+cell_size/2.);
-    (*ptcr)->line_to(x+cell_size/2., y-cell_size/2.);
+    (*ptcr)->move_to(x - cell_size/2., y - cell_size/2.);
+    (*ptcr)->line_to(x - cell_size/2., y + cell_size/2.);
+    (*ptcr)->line_to(x + cell_size/2., y + cell_size/2.);
+    (*ptcr)->line_to(x + cell_size/2., y - cell_size/2.);
     (*ptcr)->close_path();
     (*ptcr)->fill_preserve();
     (*ptcr)->stroke();
@@ -107,6 +109,48 @@ void graphic_fade_dead(unsigned x, unsigned y, const Color gray) {
     (*ptcr)->close_path();
     (*ptcr)->fill_preserve();
     (*ptcr)->stroke();
+}
+
+void graphic_ghost_pattern(unsigned x, unsigned y, 
+                           std::vector<Pos> cells, unsigned ref_color) {
+    (*ptcr)->move_to(x, y);
+    for (auto& e : cells) {
+        graphic_draw_cell(x + e.x, y + e.y, ref_color, -ghost_color, -ghost_color, 0.5);
+    }
+    (*ptcr)->stroke();
+}
+
+void graphic_draw_select_rec(unsigned x_0, unsigned y_0, unsigned x, 
+                             unsigned y, unsigned ref_color) {
+    double width(0), height(0);
+    (*ptcr)->set_source_rgba(current_color_scheme[ref_color].fg.r*ghost_color,
+                            current_color_scheme[ref_color].fg.g*ghost_color,
+                            current_color_scheme[ref_color].fg.b*1.2,
+                            0.5);
+    if (current_color_scheme[ref_color].fg.r == 0 &&
+        current_color_scheme[ref_color].fg.g == 0 &&
+        current_color_scheme[ref_color].fg.b == 0) {
+        (*ptcr)->set_source_rgba(current_color_scheme[ref_color].fg.r+ghost_color/2,
+                              current_color_scheme[ref_color].fg.g+ghost_color/2,
+                              current_color_scheme[ref_color].fg.b+ghost_color,
+                              0.5);
+    }
+
+    width = (double)x - (double)x_0;
+    height = (double)y - (double)y_0;
+    (*ptcr)->move_to(x_0 - cell_size/2., y_0 - cell_size/2.);
+    (*ptcr)->line_to(x_0 - cell_size/2. + width, y_0 - cell_size/2.);
+    (*ptcr)->line_to(x_0 - cell_size/2. + width, y_0 - cell_size/2. + height);
+    (*ptcr)->line_to(x_0 - cell_size/2., y_0 - cell_size/2. + height);
+    (*ptcr)->close_path();
+    (*ptcr)->fill_preserve();
+    (*ptcr)->stroke();
+}
+
+void graphic_highlight_selected_cells(std::vector<Pos> selected_cells, unsigned ref_color) {
+    for (auto& e : selected_cells) {
+        graphic_draw_cell(e.x, e.y, ref_color, 0.0, 0.6, 0.6);
+    }
 }
 
 void graphic_change_light_color_scheme(unsigned id) {

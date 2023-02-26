@@ -1,5 +1,5 @@
 /*
- *  graphic_gui.h -- GameofLife -- GUI with various options and view controls
+ *  graphic_gui.h -- GoL Lab -- GUI with various options and view controls
  *  Copyright (C) 2022 Cyprien Lacassagne
 
  *  This program is free software: you can redistribute it and/or modify

@@ -1,5 +1,5 @@
 /*
- *  main.cc -- GameofLife -- GUI with various options and view controls
+ *  main.cc -- GoL Lab -- GUI with various options and view controls
  *  Copyright (C) 2022 Cyprien Lacassagne
 
  *  This program is free software: you can redistribute it and/or modify
@@ -41,32 +41,12 @@ int main(int argc, char * argv[]) {
 	srand((unsigned) time(0));
 
 	auto app = Gtk::Application::create(argc, argv, "com.github.clacassa.GoL-Lab");
-
-	// Uncomment this if you want the application to start in dark mode - need a recompilation
-	//	g_object_set(gtk_settings_get_default(),
-    //			"gtk-application-prefer-dark-theme", TRUE, NULL);
-	//	set_dark_theme_on();
-	// Uncomment this if you want the application to start in dark mode
-
-	// Set default properties for the main window
-	SimulationWindow window(filename);
-	window.set_default_size(window_size*1.07, window_size); // perfect w/h ratio for FullHD screens
-	window.set_position(Gtk::WIN_POS_CENTER);
-	window.set_default_icon_from_file("share/icons/forme_stable_3.ico");
-	window.set_resizable(true);
-	window.file_error_dialog();
+	SimulationWindow window(app, filename);
 
 	if (filename == "") window.set_title(PROGRAM_NAME);
 	else {
-		if (filename.find_last_of('\\') != std::string::npos) {
-			unsigned pos = filename.find_last_of('\\');
-			filename = filename.replace(0, pos + 1, "");
-		}
-		if (filename.find_last_of('/') != std::string::npos) {
-			unsigned pos = filename.find_last_of('/');
-			filename = filename.replace(0, pos + 1, "");
-		}
-		window.set_title(filename + "  -  GoL Lab");
+		filename = filename_from_filepath(filename);
+		window.set_title(filename + "  -  " + PROGRAM_NAME);
 	}
 
 	return app->run(window);

@@ -1,5 +1,5 @@
 /*
- *  gui.cc -- GameofLife -- GUI with various options and view controls
+ *  gui.cc -- GoL Lab -- GUI with various options and view controls
  *  Copyright (C) 2022 Cyprien Lacassagne
 
  *  This program is free software: you can redistribute it and/or modify
@@ -16,18 +16,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "gui.h"
-#include "graphic_gui.h"
-#include "simulation.h"
-#include "config.h"
-
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <cairomm/context.h>
 #include <cstdlib>
+#include <filesystem>
+#include "gui.h"
+#include "graphic_gui.h"
+#include "config.h"
 
-static Frame default_frame = {-1, Conf::world_size, -1, Conf::world_size,
+namespace fs = std::filesystem;
+
+static Frame default_frame = {-1, Conf::world_size, -1, Conf::world_y_max,
                                                        1, window_size, window_size};
 
 static void orthographic_projection(const Cairo::RefPtr<Cairo::Context>& cr,
@@ -36,24 +37,38 @@ static void orthographic_projection(const Cairo::RefPtr<Cairo::Context>& cr,
 static unsigned val(0);
 static unsigned zoom(100);
 static unsigned z_ratio(100);
-// Variable that manages the theme variant (0 for light, 1 for dark)
-static unsigned _theme_(0);
 
+static bool dark_theme_on(false);
 static bool show_grid(false);
+
+static bool inserting_pattern(false);
+static bool dragging_frame(false);
+static bool in_MyArea_window(false);
+static Action current_action(DRAW);
+// Mouse coordinates in the drawing area
+static unsigned x_mouse, y_mouse, x_0_sel_mouse, y_0_sel_mouse;
 
 void set_default_frame() {
     default_frame.xMin = -1;
     default_frame.xMax = Conf::world_size;
     default_frame.yMin = -1;
-    default_frame.yMax = Conf::world_size;
+    default_frame.yMax = Conf::world_y_max;
 }
 
 //===========================================
 
 MyArea::MyArea()
-:   empty(false) {}
+:   empty(false) {
+    this->signal_enter_notify_event().connect(sigc::mem_fun(*this,
+            &MyArea::on_enter_notify_event));
+    this->signal_leave_notify_event().connect(sigc::mem_fun(*this,
+            &MyArea::on_leave_notify_event));
+    this->set_events(Gdk::ENTER_NOTIFY_MASK | Gdk::LEAVE_NOTIFY_MASK);
+}
 
-MyArea::~MyArea() {}
+MyArea::~MyArea() {
+    setFrame(default_frame);
+}
 
 void MyArea::clear() {
     empty = true;
@@ -90,6 +105,7 @@ void MyArea::adjustFrame()
 	Gtk::Allocation allocation = get_allocation();
 	const int width = allocation.get_width();
 	const int height = allocation.get_height();
+
 	
 	frame.width  = width;
 	frame.height = height;
@@ -131,7 +147,7 @@ static void orthographic_projection(const Cairo::RefPtr<Cairo::Context>& cr,
 
 void MyArea::draw_frame(const Cairo::RefPtr<Cairo::Context>& cr) {
 
-    if (!_theme_) {
+    if (!dark_theme_on) {
         cr->set_source_rgb(gray1.r, gray1.g, gray1.b);
     }else {
         cr->set_source_rgb(0.1, 0.1, 0.1);
@@ -148,41 +164,107 @@ bool MyArea::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
         adjustFrame();
         orthographic_projection(cr, frame);
 
-        graphic_draw_world(Conf::world_size, Conf::world_size, _theme_, show_grid, default_frame.xMax-default_frame.xMin);
-        draw_cells(_theme_);
+        graphic_draw_world(Conf::world_size, Conf::world_y_max, dark_theme_on, show_grid, default_frame.xMax-default_frame.xMin);
+        draw_cells(dark_theme_on);
+
+        if (inserting_pattern) {
+            graphic_ghost_pattern(x_mouse, y_mouse, pattern, dark_theme_on);
+            refresh();
+            return true;
+        }
+        if (dragging_frame)
+            return true;
+        if (current_action == SELECT) {
+            graphic_draw_select_rec(x_0_sel_mouse, y_0_sel_mouse, x_mouse, y_mouse, dark_theme_on);
+            graphic_highlight_selected_cells(selection, dark_theme_on);
+        }
+
         refresh();
     }
     return true;
 }
 
-/*  ===========================================
-    SimulationWindow constructor: TopLevel window initialization
-    Manages all signal handlers and events
-    ===========================================
+void MyArea::flip_pattern_left_right() {
+    unsigned width(pattern_width());
+        for (auto& e : pattern) {
+            e.x = width - e.x;
+        }
+}
+
+void MyArea::flip_pattern_up_down() {
+    unsigned height(pattern_height());
+    for (auto& e : pattern) {
+        e.y = height - e.y;
+    }
+}
+
+void MyArea::rotate_pattern() {
+    unsigned tmp;
+    for (auto& e : pattern) {
+        tmp = e.x;
+        e.x = e.y;
+        e.y = tmp;
+    }
+}
+
+std::vector<Pos> MyArea::rebase_coords(std::vector<Pos> abs_coords) {
+    unsigned x_min(Conf::world_size);
+    unsigned y_min(Conf::world_y_max);
+    for (auto& e : abs_coords) {
+        if (e.x < x_min) x_min = e.x;
+        if (e.y < y_min) y_min = e.y;
+    }
+    for (auto& e : abs_coords) {
+        e.x -= x_min;
+        e.y -= y_min;
+    }
+    return abs_coords;
+}
+
+unsigned MyArea::pattern_width() {
+    unsigned max(0);
+    unsigned min(Conf::world_size);
+    for (unsigned i(0); i < pattern.size(); ++i) {
+        if (pattern[i].x > max) max = pattern[i].x;
+        if (pattern[i].x < min) min = pattern[i].x;
+    }
+    return max-min;
+}
+
+unsigned MyArea::pattern_height() {
+    unsigned max(0);
+    unsigned min(Conf::world_y_max);
+    for (unsigned i(0); i < pattern.size(); ++i) {
+        if (pattern[i].y > max) max = pattern[i].y;
+        if (pattern[i].y < min) min = pattern[i].y;
+    }
+    return max-min;
+}
+
+bool MyArea::on_enter_notify_event(GdkEventCrossing * crossing_event) {
+    if (crossing_event->type == GDK_ENTER_NOTIFY) {
+        in_MyArea_window = true;
+        return true;
+    }
+    return false;
+}
+
+bool MyArea::on_leave_notify_event(GdkEventCrossing * crossing_event) {
+    if (crossing_event->type == GDK_LEAVE_NOTIFY) {
+        in_MyArea_window = false;
+        return true;
+    }
+    return false;
+}
+
+/**  
+ *  ===========================================
+ *  SimulationWindow constructor: TopLevel window initialization.
+ *  Manages all signal handlers and events.
+ *  ===========================================
 */
-SimulationWindow::SimulationWindow(std::string __filename)
-:   fileMi("File"),
-    viewMi("View"),
-    toolsMi("Tools"),
-    m_helpMi("Help"),
-    openMi("Open..."),
-    saveMi("Save"),
-    saveasMi("Save as..."),
-    quitMi("Quit"),
-    zoominMi("Zoom in"),
-    zoomoutMi("Zoom out"),
-    resetzoomMi("Reset zoom"),
-    showgridMi("Show Grid"),
-    fadeMi("Fade Effect"),
-    darkmode("Dark Theme"),
-    colorschemeMi("Color Scheme"),
-    experimentMi("Stability Detection (S.D.)"),
-    simsizeMi("World size"),
-    incrsizeMi("Extend"),
-    decrsizeMi("Shrink"),
-    helpMi("Help"),
-    aboutMi("About"),
-    m_SuperBox(Gtk::ORIENTATION_VERTICAL),
+SimulationWindow::SimulationWindow(Glib::RefPtr<Gtk::Application> app, std::string __filename)
+:   m_SuperBox(Gtk::ORIENTATION_VERTICAL),
     m_Box(Gtk::ORIENTATION_HORIZONTAL),
     m_Box_General(Gtk::ORIENTATION_VERTICAL, 15),
     m_ButtonBox(Gtk::ORIENTATION_VERTICAL, 5),
@@ -192,61 +274,69 @@ SimulationWindow::SimulationWindow(std::string __filename)
     m_Button_Reset("Reset"),
     m_Button_Clear("Clear"),
     m_Button_Random("Random"),
-    m_Button_Canon("Glider gun"),
-    m_Button_Max("Spacefiller"),
     m_Scale(Gtk::ORIENTATION_HORIZONTAL),
     m_Label_Theme("dark"),
     timer_added(false),
     disconnect(false),
     experiment(false),
     timeout_value(startup_timeout_value),
-    frame_surface(default_frame.xMax*default_frame.xMax),
+    frame_surface(default_frame.xMax*default_frame.yMax),
     filename(__filename),
     x(std::to_string(default_frame.xMax / 2)),
     y(std::to_string(default_frame.yMax / 2)),
     button_type(NONE)
-    {
-        m_Box.set_margin_top(2);
-        m_Box.set_margin_right(2);
-        m_Box_General.set_margin_left(5);
-        m_Box_General.set_margin_right(5);
-        m_Box_General.set_size_request(130);
+{
+    set_default_size(window_size*1.07, window_size);
+    set_position(Gtk::WIN_POS_CENTER);
+    set_default_icon_from_file(PROGRAM_ICON);
+    set_resizable(true);
+    parse_file_error();
 
-        add(m_SuperBox);
-        m_SuperBox.pack_start(m_MenuBar, false, false);
-        m_SuperBox.pack_start(m_Separator, false, false);
-        m_SuperBox.pack_start(m_Box);
-        m_SuperBox.pack_start(m_StatusBar, false, false);
-        m_Box.pack_start(m_Box_General, false, false);
-        m_Box.pack_start(m_Area);
-        m_Box_General.pack_start(m_ButtonBox, false, false);
-        m_Box_General.pack_start(m_Frame_Speed, false, false);
-        m_Frame_Speed.add(m_Scale);
-        m_Frame_Speed.set_shadow_type(Gtk::SHADOW_ETCHED_OUT);
+    m_Box.set_margin_top(2);
+    m_Box.set_margin_right(2);
+    m_Box_General.set_margin_left(5);
+    m_Box_General.set_margin_right(5);
+    m_Box_General.set_size_request(130);
 
-        m_Separator.set_valign(Gtk::ALIGN_START);
-        m_Separator.set_vexpand(false);
+    this->set_events(Gdk::POINTER_MOTION_MASK);
 
-        create_MenuBar();
-        MenuBar_signals_hdl();
-        MenuBar_accelerators();
+    add(m_SuperBox);
 
-        create_refresh_scale();
-        create_control_buttons();
-        create_StatusBar();
-        create_ComboBoxes();
+    create_main_action_group(app);
+    instanciate_menubar_from_glade();
+    instanciante_toolbar_from_glade();
 
-        if (_theme_) {
-            darkmode.set_active(true);
-        }
-        if (showgridMi.get_active()) {
-            show_grid = true;
-        }
+    m_SuperBox.pack_start(m_Separator, false, false);
+    m_SuperBox.pack_start(m_Box);
+    m_SuperBox.pack_start(m_StatusBar, false, false);
+    m_Box.pack_start(m_Box_General, false, false);
+    m_Box.pack_start(m_Area);
+    m_Box_General.pack_start(m_ButtonBox, false, false);
+    m_Box_General.pack_start(m_Frame_Speed, false, false);
+    m_Frame_Speed.add(m_Scale);
+    m_Frame_Speed.set_shadow_type(Gtk::SHADOW_ETCHED_OUT);
 
-        read_settings();
+    m_Separator.set_valign(Gtk::ALIGN_START);
+    m_Separator.set_vexpand(false);
 
-        show_all_children();
+    create_refresh_scale();
+    create_control_buttons();
+    create_StatusBar();
+    create_ComboBoxes();
+    create_patterns_ComboBox();
+
+    if (showgridMi->get_active()) {
+        show_grid = true;
     }
+    showToolbarMi->set_active();
+    showStatusBarMi->set_active();
+    m_ToolBar->set_visible();
+    m_StatusBar.set_visible();
+
+    read_settings();
+
+    show_all_children();
+}
 
 void SimulationWindow::zoom_frame() {
     if (z_ratio == 0) {
@@ -256,7 +346,7 @@ void SimulationWindow::zoom_frame() {
     }
 
     // Calculate the target frame's dimensions
-    unsigned target_surface(Conf::world_size * Conf::world_size * z_ratio / 100);
+    unsigned target_surface(Conf::world_size * Conf::world_y_max * z_ratio / 100);
     unsigned target_side(sqrt(target_surface));
     double xMaxNew = default_frame.xMax + (target_side - (default_frame.xMax - default_frame.xMin)) / 2;
     double xMinNew = default_frame.xMin - (target_side - (default_frame.xMax - default_frame.xMin)) / 2;
@@ -278,7 +368,7 @@ void SimulationWindow::zoom_frame() {
         xMaxNew += target_side - (default_frame.xMax - default_frame.xMin);
         xMinNew = default_frame.xMin;
     }
-    if (yMaxNew > Conf::world_size) {
+    if (yMaxNew > Conf::world_y_max) {
         yMinNew -= (target_side - (default_frame.yMax - default_frame.yMin));
         yMaxNew = default_frame.yMax;
     }
@@ -296,33 +386,22 @@ void SimulationWindow::zoom_frame() {
 void SimulationWindow::updt_statusbar_coord() {
     x = std::to_string((default_frame.xMax + (int)default_frame.xMin) / 2 + 1);
     y = std::to_string((default_frame.yMax + (int)default_frame.yMin) / 2 + 1);
-    m_LabelCoordinates.set_text("x : " + x + "    y : " + y);
-}
-
-void SimulationWindow::reset_max_canon() {
-    m_Button_Canon.set_active(false);
-    m_Button_Canon.set_sensitive(true);
-    m_Button_Max.set_active(false);
-    m_Button_Max.set_sensitive(true);
-    val = 0;
+    m_LabelCoordinates.set_text("x=" + x + "    y=" + y);
 }
 
 // The asterisk shows that change are occuring, but the file
 // is not overwritten yet. Click on 'Save' to overwrite the file
 void SimulationWindow::file_modified() {
-    if (filename != "" && !saveMi.get_sensitive()) {
-        saveMi.set_sensitive(true);
+    if (filename != "" && !saveMi->get_sensitive()) {
+        saveMi->set_sensitive(true);
+        toolbutton_save->set_sensitive(true);
         m_Button_Reset.set_sensitive(true);
         this->set_title("*" + this->get_title());
     }
 }
 
-void set_dark_theme_on() {
-    _theme_ = 1;
-}
-
-void SimulationWindow::on_button_quit_clicked() {
-    exit(EXIT_SUCCESS);
+void SimulationWindow::on_action_quit() {
+    hide();
 }
 
 void SimulationWindow::on_button_start_clicked() {
@@ -366,58 +445,39 @@ void SimulationWindow::on_button_step_clicked() {
 void SimulationWindow::on_button_reset_clicked() {
     val = 0;
     m_Button_Reset.set_sensitive(false);
-    saveMi.set_sensitive(false);
+    saveMi->set_sensitive(false);
+    toolbutton_save->set_sensitive(false);
     init();
     read_file(filename);
     set_default_frame();
     this->set_title(this->get_title().replace(0, 1, ""));
-    m_Label_Info.set_label("<b>Generation : " + std::to_string(val) + "</b>");
-    m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
-    m_LabelSize.set_text(std::to_string(Conf::world_size) + "x" + std::to_string(Conf::world_size));
-    reset_max_canon();
+    m_Label_Info.set_label("<b>Generation=" + std::to_string(val) + "</b>");
+    m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
+    m_LabelSize.set_text(std::to_string(Conf::world_size) + "x" + std::to_string(Conf::world_y_max));
 }
 
-void SimulationWindow::on_button_clear_clicked() {
-    val = 0;
+void SimulationWindow::on_action_random() {
     init();
-    this->set_title(PROGRAM_NAME);
-    m_Label_Info.set_label("<b>Generation : " + std::to_string(val) + "</b>");
-    m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
-    m_Button_Reset.set_sensitive(false);
-    saveMi.set_sensitive(false);
-    filename = "";
-    if (experiment) {
-        m_Label_Test.set_visible(true);
-        m_Label_Test.set_label("<span foreground='blue'>S.D. ON</span>");
-    }else {
-        m_Label_Test.set_visible(false);
-    }
-    reset_max_canon();
-}
-
-void SimulationWindow::on_button_random_clicked() {
-    init();
-    reset_max_canon();
     file_modified();
     if (experiment) {
         m_Label_Test.set_visible(true);
         m_Label_Test.set_label("<span foreground='blue'>S.D. ON</span>");
-        m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
+        m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
     }else {
         m_Label_Test.set_visible(false);
     }
     
     // Randomly fill half of the grid
     unsigned rand_x, rand_y;
-    for (unsigned index(0); index < (Conf::world_size*Conf::world_size)/2; ++index) {
+    for (unsigned index(0); index < (Conf::world_size*Conf::world_y_max)/2; ++index) {
         rand_x = rand() % Conf::world_size;
-        rand_y = rand() % Conf::world_size;
+        rand_y = rand() % Conf::world_y_max;
         new_birth(rand_x, rand_y);
     }
     m_Area.refresh();
 }
 
-void SimulationWindow::on_button_open_clicked() {
+void SimulationWindow::on_action_open() {
 
     auto dialog = Gtk::FileChooserNative::create("Open a file", Gtk::FILE_CHOOSER_ACTION_OPEN, "_Open", "_Cancel");
     auto filter = Gtk::FileFilter::create();
@@ -434,28 +494,29 @@ void SimulationWindow::on_button_open_clicked() {
         // Read data and check for any error
         if (read_file(filename)) {
 
-            on_button_reset_zoom_clicked();
+            on_action_reset_zoom();
             m_Label_Info.set_label("<span weight='bold' > Generation : " + std::to_string(val) + "</span>");
-            m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
-            m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "+ std::to_string(Conf::world_size));
-            if (Conf::world_size == world_size_min) decrsizeMi.set_sensitive(false);
-            if (Conf::world_size == world_size_max) incrsizeMi.set_sensitive(false);
-            if (Conf::world_size > world_size_min) decrsizeMi.set_sensitive(true);
-            if (Conf::world_size < world_size_max) incrsizeMi.set_sensitive(true);
+            m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
+            m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "+ std::to_string(Conf::world_y_max));
+            if (Conf::world_size == world_size_min) decrsizeMi->set_sensitive(false);
+            if (Conf::world_size == world_size_max) incrsizeMi->set_sensitive(false);
+            if (Conf::world_size > world_size_min) decrsizeMi->set_sensitive(true);
+            if (Conf::world_size < world_size_max) incrsizeMi->set_sensitive(true);
 
             unsigned pos = filename.find_last_of('\\');
             std::string flnm = filename;
             this->set_title(flnm.replace(0, pos + 1, "") + "  -  " + PROGRAM_NAME);
         }else {
-            file_error_dialog();
+            parse_file_error();
         }
     }
-    saveMi.set_sensitive(false);
+    saveMi->set_sensitive(false);
+    toolbutton_save->set_sensitive(false);
     m_Button_Reset.set_sensitive(false);
     m_Area.refresh();
 }
 
-void SimulationWindow::file_error_dialog() {
+void SimulationWindow::parse_file_error() {
     switch (get_error_id())
     {
     case 1:
@@ -474,14 +535,15 @@ void SimulationWindow::file_error_dialog() {
 
 void SimulationWindow::error_dialog_open(std::string error_message) {
     Gtk::MessageDialog error_dialog(error_message, true, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
-    // Font options
-    if (!_theme_) {
-        error_dialog.set_message("<span size='large' foreground='#000099' letter_spacing='1024'>"
-                        + error_message + "</span>", true);
-    }else {
-        error_dialog.set_message("<span size='large' foreground='#C0C0C0' letter_spacing='1024'>"
-                        + error_message + "</span>", true);
-    }
+    // // Font options
+    // if (!dark_theme_on) {
+    //     error_dialog.set_message("<span size='large' foreground='#000099' letter_spacing='1024'>"
+    //                     + error_message + "</span>", true);
+    // }else {
+    //     error_dialog.set_message("<span size='large' foreground='#C0C0C0' letter_spacing='1024'>"
+    //                     + error_message + "</span>", true);
+    // }
+    error_dialog.set_message(error_message);
     std::vector<Gtk::Widget*> children = error_dialog.get_action_area()->get_children();
     children[0]->set_margin_left(dialog_button_margin);              
     error_dialog.set_icon_from_file("share/icons/notifications.ico");
@@ -491,14 +553,16 @@ void SimulationWindow::error_dialog_open(std::string error_message) {
     this->set_title(PROGRAM_NAME);
 }
 
-void SimulationWindow::on_button_save_clicked() {
+void SimulationWindow::on_action_save() {
+    if (!saveMi->get_sensitive()) return;
     save_file(filename);
-    saveMi.set_sensitive(false);
+    saveMi->set_sensitive(false);
+    toolbutton_save->set_sensitive(false);
     m_Button_Reset.set_sensitive(false);
     this->set_title(this->get_title().replace(0, 1, ""));
 }
 
-void SimulationWindow::on_button_saveas_clicked() {
+void SimulationWindow::on_action_saveas() {
     auto dialog = Gtk::FileChooserNative::create("Save as", Gtk::FILE_CHOOSER_ACTION_SAVE, "_Save", "_Cancel");
     auto filter = Gtk::FileFilter::create();
     // Show only text files
@@ -512,7 +576,7 @@ void SimulationWindow::on_button_saveas_clicked() {
     }    
 }
 
-void SimulationWindow::on_button_test_clicked() {
+void SimulationWindow::on_action_experiment() {
     if (experiment) {
         experiment = false;
         m_Label_Test.set_visible(false);
@@ -521,9 +585,14 @@ void SimulationWindow::on_button_test_clicked() {
         m_Label_Test.set_visible(true);
         m_Label_Test.set_label("<span foreground='blue'>S.D. ON</span>");
     }
+    // if (experimentMi->get_active())
+    //     experimentMi->set_active(false);
+    // else
+    //     experimentMi->set_active(true);    
 }
 
-void SimulationWindow::on_button_zoom_in_clicked() {
+void SimulationWindow::on_action_zoom_in() {
+    if (!zoominMi->get_sensitive()) return;
     zoom += 10;
     z_ratio -= 10;
     zoom_frame();
@@ -531,13 +600,17 @@ void SimulationWindow::on_button_zoom_in_clicked() {
     updt_statusbar_coord();
 
     if (z_ratio == 0) {
-        zoominMi.set_sensitive(false);
+        zoominMi->set_sensitive(false);
+        toolbutton_zoomin->set_sensitive(false);
     }
-    zoomoutMi.set_sensitive(true);
-    resetzoomMi.set_sensitive(true);
+    zoomoutMi->set_sensitive(true);
+    resetzoomMi->set_sensitive(true);
+    toolbutton_zoomout->set_sensitive(true);
+    toolbutton_resetzoom->set_sensitive(true);
 }
 
-void SimulationWindow::on_button_zoom_out_clicked() {
+void SimulationWindow::on_action_zoom_out() {
+    if (!zoomoutMi->get_sensitive()) return;
     zoom -= 10;
     z_ratio += 10;
     zoom_frame();
@@ -545,57 +618,63 @@ void SimulationWindow::on_button_zoom_out_clicked() {
     updt_statusbar_coord();
 
     if (zoom == 100) {
-        zoomoutMi.set_sensitive(false);
-        resetzoomMi.set_sensitive(false);
+        zoomoutMi->set_sensitive(false);
+        resetzoomMi->set_sensitive(false);
+        toolbutton_zoomout->set_sensitive(false);
+    toolbutton_resetzoom->set_sensitive(false);
     }
-    zoominMi.set_sensitive(true);
+    zoominMi->set_sensitive(true);
+    toolbutton_zoomin->set_sensitive(true);
 }
 
-void SimulationWindow::on_button_reset_zoom_clicked() {
+void SimulationWindow::on_action_reset_zoom() {
     zoom = 100;
     z_ratio = 100;
     m_LabelZoom.set_text(std::to_string(zoom) + "%");
-    zoomoutMi.set_sensitive(false);
-    resetzoomMi.set_sensitive(false);
-    zoominMi.set_sensitive(true);
+    zoominMi->set_sensitive(true);
+    zoomoutMi->set_sensitive(false);
+    resetzoomMi->set_sensitive(false);
+    toolbutton_zoomin->set_sensitive(true);
+    toolbutton_zoomout->set_sensitive(false);
+    toolbutton_resetzoom->set_sensitive(false);
 
     set_default_frame();
     updt_statusbar_coord();
 }
 
-void SimulationWindow::on_leftarrow_pressed() {
+void SimulationWindow::pan_frame_left(unsigned offset) {
     if (zoom > 100 && default_frame.xMin > -1) {
-        default_frame.xMin -= 1;
-        default_frame.xMax -= 1;
+        default_frame.xMin -= offset;
+        default_frame.xMax -= offset;
         updt_statusbar_coord();
         m_Area.refresh();
     }
 }
 
-void SimulationWindow::on_rightarrow_pressed() {
+void SimulationWindow::pan_frame_right(unsigned offset) {
     if (zoom > 100 && default_frame.xMax < Conf::world_size) {
-        default_frame.xMin += 1;
-        default_frame.xMax += 1;
+        default_frame.xMin += offset;
+        default_frame.xMax += offset;
 
         updt_statusbar_coord();
         m_Area.refresh();
     }
 }
 
-void SimulationWindow::on_uparrow_pressed() {
-    if (zoom > 100 && default_frame.yMax < Conf::world_size) {
-        default_frame.yMin += 1;
-        default_frame.yMax += 1;
+void SimulationWindow::pan_frame_up(unsigned offset) {
+    if (zoom > 100 && default_frame.yMax < Conf::world_y_max) {
+        default_frame.yMin += offset;
+        default_frame.yMax += offset;
 
         updt_statusbar_coord();
         m_Area.refresh();
     }
 }
 
-void SimulationWindow::on_downarrow_pressed() {
+void SimulationWindow::pan_frame_down(unsigned offset) {
     if (zoom > 100 && default_frame.yMin > -1) {
-        default_frame.yMin -= 1;
-        default_frame.yMax -= 1;
+        default_frame.yMin -= offset;
+        default_frame.yMax -= offset;
 
         updt_statusbar_coord();
         m_Area.refresh();
@@ -609,14 +688,17 @@ void SimulationWindow::on_button_increase_size_clicked() {
         Conf::set_world_size(Conf::world_size + 50);
     }
     if (Conf::world_size == world_size_max) {
-        incrsizeMi.set_sensitive(false);
+        incrsizeMi->set_sensitive(false);
     }
-    decrsizeMi.set_sensitive(true);
+    if (Conf::world_size > 300) {
+        m_Button_Random.set_sensitive(false);
+    }
+    decrsizeMi->set_sensitive(true);
     set_default_frame();
-    on_button_reset_zoom_clicked();
+    on_action_reset_zoom();
     adjust_bool_grid();
     m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "
-                       + std::to_string(Conf::world_size));
+                       + std::to_string(Conf::world_y_max));
 }
 
 void SimulationWindow::on_button_decrease_size_clicked() {
@@ -626,26 +708,29 @@ void SimulationWindow::on_button_decrease_size_clicked() {
         Conf::set_world_size(Conf::world_size - 50);
     }
     if (Conf::world_size == world_size_min)  {
-        decrsizeMi.set_sensitive(false);
+        decrsizeMi->set_sensitive(false);
     }
-    incrsizeMi.set_sensitive(true);
+    if (Conf::world_size <= 300) {
+        m_Button_Random.set_sensitive(true);
+    }
+    incrsizeMi->set_sensitive(true);
     set_default_frame();
-    on_button_reset_zoom_clicked();
+    on_action_reset_zoom();
     adjust_bool_grid();
     m_LabelSize.set_text(std::to_string(Conf::world_size) + " x "
-                       + std::to_string(Conf::world_size));
+                       + std::to_string(Conf::world_y_max));
 }
 
 void SimulationWindow::on_checkbutton_dark_checked() {
-    _theme_ = 1-_theme_;
-    if (!darkmode.get_active()) {
-        g_object_set(gtk_settings_get_default(),
-    			"gtk-application-prefer-dark-theme", FALSE, NULL);
-        _theme_ = 0;
+    dark_theme_on = 1-dark_theme_on;
+    if (!darkmode->get_active()) {
+        auto settings = Gtk::Settings::get_default();
+        settings->property_gtk_application_prefer_dark_theme().set_value(false);
+        dark_theme_on = false;
     }else {
-        g_object_set(gtk_settings_get_default(),
-    			"gtk-application-prefer-dark-theme", TRUE, NULL);
-        _theme_ = 1;
+        auto settings = Gtk::Settings::get_default();
+        settings->property_gtk_application_prefer_dark_theme().set_value(true);
+        dark_theme_on = true;
     }
 }
 
@@ -707,19 +792,69 @@ void SimulationWindow::on_combo_dark_changed() {
     }
 }
 
+void SimulationWindow::on_combo_pattern_changed() {
+    const auto iter = m_ComboPatt.get_active();
+    if (iter) {
+        const auto row = *iter;
+        if (row) {
+            Glib::ustring name = row[m_Columns.m_col_name];
+        }
+    }
+}
+
+void SimulationWindow::on_checkbutton_show_toolbar_checked() {
+    if (m_ToolBar->get_visible())
+        m_ToolBar->set_visible(false);
+    else
+        m_ToolBar->set_visible(true);
+}
+
+void SimulationWindow::on_checkbutton_show_statusbar_checked() {
+    if (m_StatusBar.get_visible())
+        m_StatusBar.set_visible(false);
+    else
+        m_StatusBar.set_visible(true);
+}
+
 void SimulationWindow::on_checkbutton_fade_checked() {
     toggle_fade_effect();
 }
 
 void SimulationWindow::on_checkbutton_grid_checked() {
-    if (showgridMi.get_active()) {
+    if (showgridMi->get_active()) {
         show_grid = true;
     }else {
         show_grid = false;
     }
 }
 
-void SimulationWindow::on_button_help_clicked() {
+void SimulationWindow::on_action_insert_pattern() {
+    Gtk::MessageDialog patternDial("Select a pattern to insert.", false,
+                Gtk::MESSAGE_INFO, Gtk::BUTTONS_OK_CANCEL);
+    Gtk::Box* marea = patternDial.get_message_area();
+    marea->pack_start(m_ComboPatt);
+    Gtk::Box* carea = patternDial.get_content_area();
+    // Give focus to the "OK" button
+    carea->set_focus_child(*(carea->get_children()[1]));
+    patternDial.set_transient_for(*this);
+    patternDial.show_all_children();
+    int result = patternDial.run();
+
+    if (result == GTK_RESPONSE_OK) {
+        const auto iter = m_ComboPatt.get_active();
+        if (iter) {
+            const auto row = *iter;
+            if (row) {
+                Glib::ustring name = row[m_Columns.m_col_name];
+                m_Area.set_pattern(get_rle_data(name));
+                inserting_pattern = true;
+                update_cursor();
+            }
+        }
+    }
+}
+
+void SimulationWindow::on_action_help() {
     // Puts the file "Help.txt" into the "help" string
     std::ifstream f("Help.txt");
     std::string help;
@@ -733,12 +868,12 @@ void SimulationWindow::on_button_help_clicked() {
     Help.set_use_markup(true);
     Help.set_label(help);
     sc_win.add(Help);
-    sc_win.set_size_request(600, 300);
+    sc_win.set_size_request(250, 250);
     // Add the scrollable window to the message area
     Gtk::Box* marea = help_dial.get_message_area();
     marea->pack_start(sc_win);
 
-    help_dial.set_title("Features Documentation");
+    help_dial.set_title("Help");
     help_dial.set_transient_for(*this);
     help_dial.show_all_children();
     help_dial.run();
@@ -747,7 +882,7 @@ void SimulationWindow::on_button_help_clicked() {
 void SimulationWindow::on_button_about_clicked() {
 
     Gtk::AboutDialog about_dial;
-    std::vector<Glib::ustring> authors(1, "Cyprien Lacassagne");
+    std::vector<Glib::ustring> authors(1, PROGRAM_AUTHOR);
 
     about_dial.set_program_name(PROGRAM_NAME);
     about_dial.set_authors(authors);
@@ -758,7 +893,7 @@ void SimulationWindow::on_button_about_clicked() {
     // Set GNU General License v3 as license
     about_dial.set_license_type(Gtk::LICENSE_GPL_3_0);
     // Pre-release version
-    about_dial.set_version("0.2.0");
+    about_dial.set_version(PROGRAM_VERSION);
     about_dial.set_hexpand(false);
     about_dial.set_comments("Based on John Conway's game of life");
     about_dial.set_wrap_license(true);
@@ -768,30 +903,9 @@ void SimulationWindow::on_button_about_clicked() {
     about_dial.run();
 }
 
-void SimulationWindow::on_button_gosper_clicked() {
-    if (m_Button_Canon.get_active()) {
-        draw_canon_planeur(0, 0);
-    }else {
-        erase_canon_planeur(0, 0);
-    }
-    file_modified();
-    m_Area.refresh();
-}
-
-void SimulationWindow::on_button_max_clicked() {
-    if (m_Button_Max.get_active()) {
-        draw_spacefiller(Conf::world_size/2 - 13, Conf::world_size/2 - 13);
-    }else {
-        erase_spacefiller(Conf::world_size/2 - 13, Conf::world_size/2 - 13);
-    }
-    file_modified();
-    m_Area.refresh();
-}
-
 bool SimulationWindow::on_button_press_event(GdkEventButton * event)
 {
-    Glib::RefPtr<Gdk::Window> ref_win(m_Area.get_window());
-    auto scroll = Gdk::Cursor::create(Gdk::CursorType::FLEUR);
+    update_cursor();
 	if(event->type == GDK_BUTTON_PRESS)
 	{
 		// raw mouse coordinates in the window frame
@@ -814,44 +928,41 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
             int x(round((p.x*(default_frame.xMax-default_frame.xMin)/width) + default_frame.xMin));
             int y(round(default_frame.yMax - (p.y*(default_frame.yMax-default_frame.yMin)/height)));
 
-            int delta_x = default_frame.xMax-default_frame.xMin;
-            int delta_y = default_frame.yMax-default_frame.yMin;
-
-            if (x < (int)Conf::world_size && y < (int)Conf::world_size) {
-                m_LabelCoordinates.set_text("x : " + std::to_string(x) + "    y : " + std::to_string(y));
+            if (x < (int)Conf::world_size && y < (int)Conf::world_y_max) {
+                x_mouse = x;
+                y_mouse = y;
+                m_LabelCoordinates.set_text("x=" + std::to_string(x_mouse) + "    y=" + std::to_string(y_mouse));
                 switch (event->button)
                 {
                 case 1:
-                    // A left click gives birth to a cell
-                    new_birth(x, y);
                     button_type = LEFT;
+                    if (inserting_pattern) {
+                        new_pattern(x, y, m_Area.get_pattern());
+                        break;
+                    }
+                    if (current_action == DRAW)
+                        new_birth(x, y);
                     break;
                 case 2:
-                    // A middle click translates the view frame
-                    if (x < (delta_x)/4 + default_frame.xMin) {
-                        on_leftarrow_pressed();
-                    }else if (x >= (delta_x*3/4) + default_frame.xMin) {
-                        on_rightarrow_pressed();
-                    }
-                    if (y < delta_y/4 + default_frame.yMin) {
-                        on_downarrow_pressed();
-                    }else if (y >= delta_y*3/4 + default_frame.yMin) {
-                        on_uparrow_pressed();
-                    }
-                    button_type = SCROLL;
-                    ref_win->set_cursor(scroll);
+                    button_type = MIDDLE;
+                    dragging_frame = true;
+                    drag_frame();
                     break;
                 case 3:
-                    // A right click kills a cell
-                    new_death(x, y);
                     button_type = RIGHT;
+                    if (inserting_pattern) {
+                        new_pattern(x, y, m_Area.get_pattern());
+                        break;
+                    }
+                    if (current_action == DRAW)
+                        new_death(x, y);
                     break;
                 default:
                     break;
                 }
                 m_Area.refresh();
                 file_modified();
-                m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
+                m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
             }
 		}
 	}
@@ -859,15 +970,31 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
 }
 
 bool SimulationWindow::on_button_release_event(GdkEventButton * event) {
-    Glib::RefPtr<Gdk::Window> ref_win(m_Area.get_window());
-    auto pencil = Gdk::Cursor::create(Gdk::CursorType::PENCIL);
-    ref_win->set_cursor(pencil);
+
+    if (!in_MyArea_window)
+        return false;
+
+    if (current_action == SELECT && !inserting_pattern)
+        update_selection();
+
+    if (button_type != MIDDLE) {
+        inserting_pattern = false;
+        rotateMi->set_sensitive(false);
+        flipverMi->set_sensitive(false);
+        fliphorMi->set_sensitive(false);
+    }
+        
+    dragging_frame = false;
+    update_cursor();
     button_type = NONE;
-    m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
+    x_0_sel_mouse = x_mouse;
+    y_0_sel_mouse = y_mouse;
+    m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
     return true;
 }
 
 bool SimulationWindow::on_motion_notify_event(GdkEventMotion * event) {
+    update_cursor();
     // raw mouse coordinates in the window frame
     double clic_x = event->x ;
     double clic_y = event->y ;
@@ -890,51 +1017,185 @@ bool SimulationWindow::on_motion_notify_event(GdkEventMotion * event) {
         int x(round((p.x*(default_frame.xMax-default_frame.xMin)/width) + default_frame.xMin));
         int y(round(default_frame.yMax - (p.y*(default_frame.yMax-default_frame.yMin)/height)));
 
-        int delta_x = default_frame.xMax-default_frame.xMin;
-        int delta_y = default_frame.yMax-default_frame.yMin;
-
-        if (x < (int)Conf::world_size && y < (int)Conf::world_size && x >= 0 && y >= 0) {
-            m_LabelCoordinates.set_text("x : " + std::to_string(x) + "    y : " + std::to_string(y));
+        if (x < (int)Conf::world_size && y < (int)Conf::world_y_max && x >= 0 && y >= 0) {
+            x_mouse = x;
+            y_mouse = y;
+            m_LabelCoordinates.set_text("x=" + std::to_string(x_mouse) + "    y=" + std::to_string(y_mouse));
             switch (button_type)
             {
             case LEFT:
-                new_birth(x, y);
+                if (current_action == DRAW)
+                    new_birth(x, y);
+                else if (current_action == DRAG)
+                    drag_frame();
+                else if (current_action == SELECT)
+                    update_selection();
                 break;
             case RIGHT:
-                new_death(x, y);
+                if (current_action == DRAW)
+                    new_death(x, y);
                 break;
-            case SCROLL:
-                if (x < (delta_x)/4 + default_frame.xMin) {
-                    on_leftarrow_pressed();
-                }else if (x >= (delta_x*3/4) + default_frame.xMin) {
-                    on_rightarrow_pressed();
-                }
-                if (y < delta_y/4 + default_frame.yMin) {
-                    on_downarrow_pressed();
-                }else if (y >= delta_y*3/4 + default_frame.yMin) {
-                    on_uparrow_pressed();
-                }
+            case MIDDLE:
+                    drag_frame();
                 break;
-            default:
-                button_type = NONE;
+            case NONE:
+                x_0_sel_mouse = x_mouse;
+                y_0_sel_mouse = y_mouse;
                 break;
             }
             m_Area.refresh();
-            m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
+            m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
         }
     }
     return true;
 }
 
-bool SimulationWindow::on_enter_notify_event(GdkEventCrossing * crossing_event) {
+void SimulationWindow::drag_frame() {
+    bool positive_x_dir = (x_0_sel_mouse <= x_mouse);
+    bool positive_y_dir = (y_0_sel_mouse <= y_mouse);
+    if (positive_x_dir)
+        pan_frame_left(2);
+    else
+        pan_frame_right(2);
+    if (positive_y_dir)
+        pan_frame_down(2);
+    else
+        pan_frame_up(2);
+}
+
+void SimulationWindow::update_selection() {
+    unsigned x_min = (x_0_sel_mouse <= x_mouse) ? x_0_sel_mouse : x_mouse;
+    unsigned x_max = (x_0_sel_mouse > x_mouse) ? x_0_sel_mouse : x_mouse;
+    unsigned y_min = (y_0_sel_mouse <= y_mouse) ? y_0_sel_mouse : y_mouse;
+    unsigned y_max = (y_0_sel_mouse > y_mouse) ? y_0_sel_mouse : y_mouse;
+    std::vector<Pos> new_sel(get_live_cells_in_area(x_min, x_max-1, y_min, y_max-1));
+    m_Area.set_selection(new_sel);
+    cutMi->set_sensitive(true);
+    copyMi->set_sensitive(true);
+    clearMi->set_sensitive(true);
+}
+
+void SimulationWindow::on_action_new() {
+    val = 0;
+    init();
+    this->set_title(PROGRAM_NAME);
+    m_Label_Info.set_label("<b>Generation=" + std::to_string(val) + "</b>");
+    m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
+    m_Button_Reset.set_sensitive(false);
+    saveMi->set_sensitive(false);
+    toolbutton_save->set_sensitive(false);
+    filename = "";
+    if (experiment) {
+        m_Label_Test.set_visible(true);
+        m_Label_Test.set_label("<span foreground='blue'>S.D. ON</span>");
+    }else {
+        m_Label_Test.set_visible(false);
+    }
+}
+
+void SimulationWindow::on_action_cut() {
+    if (!cutMi->get_sensitive()) return;
+    on_action_copy();
+    if (!m_Area.get_selection().empty()) {
+        del_pattern(0, 0, m_Area.get_selection());
+        m_Area.set_selection(get_live_cells_in_area(0, 0, 0, 0));
+    }
+    cutMi->set_sensitive(false);
+    copyMi->set_sensitive(false);
+    clearMi->set_sensitive(false);
+}
+
+void SimulationWindow::on_action_copy() {
+    if (!copyMi->get_sensitive()) return;
+    m_Area.set_clipboard(m_Area.get_selection());
+    m_Area.set_pattern(m_Area.rebase_coords(m_Area.get_selection()));
+    cutMi->set_sensitive(false);
+    copyMi->set_sensitive(false);
+    clearMi->set_sensitive(false);
+    pasteMi->set_sensitive(true);
+}
+
+void SimulationWindow::on_action_clear() {
+    if (!clearMi->get_sensitive()) return;
+
+    if (!m_Area.get_selection().empty()) {
+        del_pattern(0, 0, m_Area.get_selection());
+        m_Area.set_selection(get_live_cells_in_area(0, 0, 0, 0));
+    }
+    cutMi->set_sensitive(false);
+    copyMi->set_sensitive(false);
+    clearMi->set_sensitive(false);
+}
+
+void SimulationWindow::on_action_paste() {
+    rotateMi->set_sensitive(true);
+    flipverMi->set_sensitive(true);
+    fliphorMi->set_sensitive(true);
+    inserting_pattern = true;
+    update_cursor();
+}
+
+void SimulationWindow::on_action_select_all() {
+    std::vector<Pos> sel_all(get_live_cells_in_area(0, Conf::world_size-2, 0, Conf::world_y_max-2));
+    m_Area.set_selection(sel_all);
+    cutMi->set_sensitive(true);
+    copyMi->set_sensitive(true);
+    clearMi->set_sensitive(true);
+}
+
+void SimulationWindow::on_action_rotate() {
+    if (inserting_pattern)
+        m_Area.rotate_pattern();
+}
+
+void SimulationWindow::on_action_flip_vertically() {
+    if (inserting_pattern)
+        m_Area.flip_pattern_up_down();
+}
+
+void SimulationWindow::on_action_flip_horizontally() {
+    if (inserting_pattern)
+        m_Area.flip_pattern_left_right();
+}
+
+void SimulationWindow::on_action_cursor_draw() {
+    current_action = DRAW;
+    update_cursor();
+}
+
+void SimulationWindow::on_action_cursor_drag() {
+    current_action = DRAG;
+    update_cursor();
+}
+
+void SimulationWindow::on_action_cursor_select() {
+    current_action = SELECT;
+    update_cursor();
+}
+
+void SimulationWindow::update_cursor() {
     Glib::RefPtr<Gdk::Window> ref_window(m_Area.get_window());
-    if (crossing_event->type == GDK_ENTER_NOTIFY) {
-        ref_window->set_cursor(Gdk::Cursor::create(Gdk::CursorType::PENCIL));
+    Glib::RefPtr<Gdk::Display> display(m_Area.get_display());
+
+    auto pencil(Gdk::Cursor::create(display, Gdk::CursorType::PENCIL));
+    auto hand(Gdk::Cursor::create(Gdk::CursorType::HAND1));
+    auto cross(Gdk::Cursor::create(Gdk::CursorType::CROSS));
+
+    if (inserting_pattern || dragging_frame) {
+        ref_window->set_cursor(hand);
+        return;
     }
-    else if (crossing_event->type == GDK_LEAVE_NOTIFY) {
-        ref_window->set_cursor(Gdk::Cursor::create(Gdk::CursorType::ARROW));
+    switch (current_action) {
+        case DRAW:
+            ref_window->set_cursor(pencil);
+            break;
+        case DRAG:
+            ref_window->set_cursor(hand);
+            break;
+        case SELECT:
+            ref_window->set_cursor(cross);
+            break;
     }
-    return true;
 }
 
 void SimulationWindow::on_event_add_timer() {
@@ -952,18 +1213,11 @@ void SimulationWindow::on_event_delete_timer() {
     }
 }
 
-bool SimulationWindow::on_idle() {
-    return true;
-}
-
 bool SimulationWindow::on_timeout() {
     if (disconnect) {
         disconnect = false;
         return false;
     }
-
-    if (m_Button_Canon.get_active()) m_Button_Canon.set_sensitive(false);
-    if (m_Button_Max.get_active()) m_Button_Max.set_sensitive(false);
 
     if (experiment) {
         if (update(EXPERIMENTAL)) {
@@ -975,27 +1229,28 @@ bool SimulationWindow::on_timeout() {
             Glib::RefPtr<Gtk::CssProvider> css_provider = Gtk::CssProvider::create();
             css_provider->load_from_data("button {background-image: image(green);}");
             m_Button_Start.get_style_context()->add_provider(css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
-            m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
+            m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
             if (val < 4)
-                m_Label_Info.set_label("<b>Generation : " + std::to_string(0) + "</b>");
+                m_Label_Info.set_label("<b>Generation=" + std::to_string(0) + "</b>");
             else
-                m_Label_Info.set_label("<b>Generation : " + std::to_string(val-4) + "</b>");
+                m_Label_Info.set_label("<b>Generation=" + std::to_string(val-4) + "</b>");
             // Stop the timer
-            on_event_delete_timer();            
+            on_event_delete_timer();          
         }else {
             m_Label_Test.set_visible(true);
             m_Label_Test.set_label("<span foreground='blue'>S.D. ON</span>");
-            ++val;
-            m_Label_Info.set_label("<b>Generation : " + std::to_string(val) + "</b>");
-            m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
         }
     }else {
         update();
         m_Label_Test.set_visible(false);
-        ++val;
-        m_Label_Info.set_label("<b>Generation : " + std::to_string(val) + "</b>");
-        m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
     }
+    if (get_alive() == 0 && m_Button_Start.get_label() == "Stop") {
+        on_button_start_clicked();
+        --val;
+    }
+    ++val;
+    m_Label_Info.set_label("<b>Generation=" + std::to_string(val) + "</b>");
+    m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
     file_modified();
     m_Area.refresh();
     return true;
@@ -1006,40 +1261,32 @@ bool SimulationWindow::on_key_press_event(GdkEventKey * key_event) {
 
         if (key_event->keyval == GDK_KEY_space) {
             SimulationWindow::on_button_start_clicked();
+            return false;
+        }
+        if (key_event->keyval == GDK_KEY_Escape && inserting_pattern) {
+            inserting_pattern = false;
+            rotateMi->set_sensitive(false);
+            flipverMi->set_sensitive(false);
+            fliphorMi->set_sensitive(false);
+            update_cursor();
             return Gtk::Window::on_key_press_event(key_event);
         }
-
+            
         switch(gdk_keyval_to_unicode(key_event->keyval)) {
             case '1':
                 SimulationWindow::on_button_step_clicked();
                 break;
-            case '2':
-                SimulationWindow::on_button_clear_clicked();
-                break;
-            case '3':
-                SimulationWindow::on_button_random_clicked();
-                break;
-            case '4':
-                if (m_Button_Canon.get_active()) m_Button_Canon.set_active(false);
-                else m_Button_Canon.set_active(true);
-                SimulationWindow::on_button_gosper_clicked();
-                break;
-            case '5':
-                if (m_Button_Max.get_active()) m_Button_Max.set_active(false);
-                else m_Button_Max.set_active(true);
-                SimulationWindow::on_button_max_clicked();
-                break;
             case 'h':
-                SimulationWindow::on_leftarrow_pressed();
+                SimulationWindow::pan_frame_left();
                 break;
             case 'j':
-                SimulationWindow::on_downarrow_pressed();
+                SimulationWindow::pan_frame_down();
                 break;
             case 'k':
-                SimulationWindow::on_uparrow_pressed();
+                SimulationWindow::pan_frame_up();
                 break;
             case 'l':
-                SimulationWindow::on_rightarrow_pressed();
+                SimulationWindow::pan_frame_right();
                 break;
             default:
                 break;
@@ -1048,132 +1295,299 @@ bool SimulationWindow::on_key_press_event(GdkEventKey * key_event) {
     return Gtk::Window::on_key_press_event(key_event);
 }
 
-void SimulationWindow::create_MenuBar() {
-    m_MenuBar.append(fileMi);
-    fileMi.set_submenu(m_FileMenu);
-    m_FileMenu.append(openMi);
-    m_FileMenu.append(saveMi);
-    m_FileMenu.append(saveasMi);
-    m_FileMenu.append(file_sepMi);
-    m_FileMenu.append(quitMi);
-    m_MenuBar.append(viewMi);
-    viewMi.set_submenu(m_ViewMenu);
-    m_ViewMenu.append(zoominMi);
-    m_ViewMenu.append(zoomoutMi);
-    m_ViewMenu.append(resetzoomMi);
-    m_ViewMenu.append(view_sepMi);
-    m_ViewMenu.append(showgridMi);
-    m_ViewMenu.append(fadeMi);
-    m_ViewMenu.append(darkmode);
-    m_ViewMenu.append(view_sepMi2);
-    m_ViewMenu.append(colorschemeMi);
-    m_MenuBar.append(toolsMi);
-    toolsMi.set_submenu(m_ToolsMenu);
-    m_ToolsMenu.append(experimentMi);
-    m_ToolsMenu.append(simsizeMi);
-    simsizeMi.set_submenu(m_SimsizeMenu);
-    m_SimsizeMenu.append(incrsizeMi);
-    m_SimsizeMenu.append(decrsizeMi);
-    m_MenuBar.append(m_helpMi);
-    m_helpMi.set_submenu(m_HelpMenu);
-    m_HelpMenu.append(helpMi);
-    m_HelpMenu.append(aboutMi);
+void SimulationWindow::create_main_action_group(Glib::RefPtr<Gtk::Application> app) {
+    m_refActionGroup = Gio::SimpleActionGroup::create();
 
-    m_MenuBar.set_valign(Gtk::ALIGN_START);
-    m_MenuBar.set_vexpand(false);
-    experimentMi.set_tooltip_text("stop the simulation when stable");
-}
+    m_refActionGroup->add_action("new", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_new));
 
-void SimulationWindow::MenuBar_signals_hdl() {
-    openMi.signal_activate().connect(sigc::mem_fun(*this, 
-                &SimulationWindow::on_button_open_clicked));
+    m_refActionGroup->add_action("open", sigc::mem_fun(*this, 
+                &SimulationWindow::on_action_open));
 
-    saveMi.set_sensitive(false);
-    saveMi.signal_activate().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_save_clicked));
+    m_refActionGroup->add_action("save", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_save));
 
-    saveasMi.signal_activate().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_saveas_clicked));
+    m_refActionGroup->add_action("saveas", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_saveas));
 
-    quitMi.signal_activate().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_quit_clicked));
+    m_refActionGroup->add_action("quit", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_quit));
 
-    zoominMi.signal_activate().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_zoom_in_clicked));
+    m_refActionGroup->add_action("cut", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_cut));
 
-    zoomoutMi.set_sensitive(false);
-    zoomoutMi.signal_activate().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_zoom_out_clicked));
+    m_refActionGroup->add_action("copy", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_copy));
 
-    resetzoomMi.set_sensitive(false);
-    resetzoomMi.signal_activate().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_reset_zoom_clicked));
+    m_refActionGroup->add_action("clear", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_clear));
 
-    showgridMi.set_active(true);
-    showgridMi.signal_activate().connect(sigc::mem_fun(*this,
+    m_refActionGroup->add_action("paste", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_paste));
+
+    m_refActionGroup->add_action("selectall", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_select_all));
+
+    m_refActionGroup->add_action("random", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_random));
+
+    m_refActionGroup->add_action("rotate", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_rotate));
+
+    m_refActionGroup->add_action("flipver", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_flip_vertically));
+
+    m_refActionGroup->add_action("fliphor", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_flip_horizontally));
+
+    m_refActionGroup->add_action("draw", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_cursor_draw));
+        
+    m_refActionGroup->add_action("drag", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_cursor_drag));
+
+    m_refActionGroup->add_action("select", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_cursor_select));
+
+    m_refActionGroup->add_action("zoomin", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_zoom_in));
+
+    m_refActionGroup->add_action("zoomout", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_zoom_out));
+
+    m_refActionGroup->add_action("resetzoom", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_reset_zoom));
+
+    m_refActionGroup->add_action("showtoolbar", sigc::mem_fun(*this,
+            &SimulationWindow::on_checkbutton_show_toolbar_checked));
+
+    m_refActionGroup->add_action("showstatusbar", sigc::mem_fun(*this,
+            &SimulationWindow::on_checkbutton_show_statusbar_checked));
+
+    m_refActionGroup->add_action("showgrid", sigc::mem_fun(*this,
             &SimulationWindow::on_checkbutton_grid_checked));
 
-    fadeMi.set_active(false);
-    fadeMi.signal_activate().connect(sigc::mem_fun(*this,
+    m_refActionGroup->add_action("fade", sigc::mem_fun(*this,
             &SimulationWindow::on_checkbutton_fade_checked));
 
-    darkmode.set_active(false);
-    darkmode.signal_activate().connect(sigc::mem_fun(*this,
+    m_refActionGroup->add_action("dark", sigc::mem_fun(*this,
             &SimulationWindow::on_checkbutton_dark_checked));
 
-    colorschemeMi.signal_activate().connect(sigc::mem_fun(*this,
+    m_refActionGroup->add_action("scheme", sigc::mem_fun(*this,
             &SimulationWindow::on_button_colorscheme_clicked));
 
-    experimentMi.set_active(false);
-    experimentMi.signal_activate().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_test_clicked));
+    m_refActionGroup->add_action("experiment", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_experiment));
 
-    incrsizeMi.signal_activate().connect(sigc::mem_fun(*this,
+    m_refActionGroup->add_action("increasesize", sigc::mem_fun(*this,
             &SimulationWindow::on_button_increase_size_clicked));
-    if (Conf::world_size == world_size_max) {
-        incrsizeMi.set_sensitive(false);
-    }
 
-    decrsizeMi.signal_activate().connect(sigc::mem_fun(*this,
+    m_refActionGroup->add_action("decreasesize", sigc::mem_fun(*this,
             &SimulationWindow::on_button_decrease_size_clicked));
-    if (Conf::world_size == world_size_min) {
-        decrsizeMi.set_sensitive(false);
-    }
 
-    helpMi.signal_activate().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_help_clicked));
+    m_refActionGroup->add_action("pattern", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_insert_pattern));
 
-    aboutMi.signal_activate().connect(sigc::mem_fun(*this,
+    m_refActionGroup->add_action("help", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_help));
+
+    m_refActionGroup->add_action("about", sigc::mem_fun(*this,
             &SimulationWindow::on_button_about_clicked));
+
+    insert_action_group("main", m_refActionGroup);
+    app->set_accel_for_action("main.new", "<Primary>n");
+    app->set_accel_for_action("main.open", "<Primary>o");
+    app->set_accel_for_action("main.save", "<Primary>s");
+    app->set_accel_for_action("main.saveas", "<Primary><Shift>s");
+    app->set_accel_for_action("main.quit", "<Primary>q");
+    app->set_accel_for_action("main.cut", "<Primary>x");
+    app->set_accel_for_action("main.copy", "<Primary>c");
+    app->set_accel_for_action("main.paste", "<Primary>v");
+    app->set_accel_for_action("main.selectall", "<Primary>a");
+    app->set_accel_for_action("main.clear", "Delete");
+    app->set_accel_for_action("main.random", "<Primary>r");
+    app->set_accel_for_action("main.rotate", "r");
+    app->set_accel_for_action("main.flipver", "y");
+    app->set_accel_for_action("main.fliphor", "x");
+    app->set_accel_for_action("main.draw", "F2");
+    app->set_accel_for_action("main.drag", "F3");
+    app->set_accel_for_action("main.select", "F4");
+    app->set_accel_for_action("main.zoomin", "<Primary>plus");
+    app->set_accel_for_action("main.zoomout", "<Primary>minus");
+    app->set_accel_for_action("main.resetzoom", "0");
+    app->set_accel_for_action("main.increasesize", "<Primary>Page_Up");
+    app->set_accel_for_action("main.decreasesize", "<Primary>Page_Down");
+    app->set_accel_for_action("main.pattern", "<Primary>p");
+    app->set_accel_for_action("main.help", "F1");
 }
 
-void SimulationWindow::MenuBar_accelerators() {
-    Glib::RefPtr<Gtk::AccelGroup> accel_group = Gtk::AccelGroup::create();
-    this->add_accel_group(accel_group);
-    openMi.add_accelerator("activate", accel_group, GDK_KEY_o,
-                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    saveMi.add_accelerator("activate", accel_group, GDK_KEY_s,
-                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    saveasMi.add_accelerator("activate", accel_group, GDK_KEY_s,
-                            Gdk::SHIFT_MASK, Gtk::ACCEL_VISIBLE);
-    quitMi.add_accelerator("activate", accel_group, GDK_KEY_q,
-                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    zoominMi.add_accelerator("activate", accel_group, GDK_KEY_plus,
-                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    zoomoutMi.add_accelerator("activate", accel_group, GDK_KEY_minus,
-                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    resetzoomMi.add_accelerator("activate", accel_group, GDK_KEY_0,
-                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    colorschemeMi.add_accelerator("activate", accel_group, GDK_KEY_c,
-                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    incrsizeMi.add_accelerator("activate", accel_group, GDK_KEY_Page_Up,
-                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    decrsizeMi.add_accelerator("activate", accel_group, GDK_KEY_Page_Down,
-                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    experimentMi.add_accelerator("activate", accel_group, GDK_KEY_t,
-                            Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    helpMi.add_accelerator("activate", accel_group, GDK_KEY_F1,
-                            Gdk::RELEASE_MASK, Gtk::ACCEL_VISIBLE);
+void SimulationWindow::instanciate_menubar_from_glade() {
+    m_refBuilder = Gtk::Builder::create();
+
+    try {
+        m_refBuilder->add_from_file("src/toolbar.glade");
+    }
+    catch(const Glib::Error& ex) {
+        std::cerr << "Building menus and toolbar failed: " << ex.what();
+    }
+
+    m_MenuBar = nullptr;
+    m_refBuilder->get_widget("menubar", m_MenuBar);
+    if (!m_MenuBar)
+        g_warning("GtkMenuBar not found");
+    else
+        m_SuperBox.pack_start(*m_MenuBar, Gtk::PACK_SHRINK);
+
+    saveMi = nullptr;
+    m_refBuilder->get_widget("saveMi", saveMi);
+    if (!saveMi)
+        g_warning("GtkMenuItem not found: saveMi");
+    saveMi->set_sensitive(false);
+
+    cutMi = nullptr;
+    m_refBuilder->get_widget("cutMi", cutMi);
+    if (!cutMi)
+        g_warning("GtkMenuItem not found");
+    cutMi->set_sensitive(false);
+
+    copyMi = nullptr;
+    m_refBuilder->get_widget("copyMi", copyMi);
+    if (!copyMi)
+        g_warning("GtkMenuItem not found: copyMi");
+    copyMi->set_sensitive(false);
+
+    clearMi = nullptr;
+    m_refBuilder->get_widget("clearMi", clearMi);
+    if (!clearMi)
+        g_warning("GtkMenuItem not found: clearMi");
+    clearMi->set_sensitive(false);
+
+    pasteMi = nullptr;
+    m_refBuilder->get_widget("pasteMi", pasteMi);
+    if (!pasteMi)
+        g_warning("GtkMenuItem not found: pasteMi");
+    pasteMi->set_sensitive(false);
+
+    rotateMi = nullptr;
+    m_refBuilder->get_widget("rotateMi", rotateMi);
+    if (!rotateMi)
+        g_warning("GtkMenuItem not found: rotateMi");
+    rotateMi->set_sensitive(false);
+
+    flipverMi = nullptr;
+    m_refBuilder->get_widget("flipverMi", flipverMi);
+    if (!flipverMi)
+        g_warning("GtkMenuItem not found: flipverMi");
+    flipverMi->set_sensitive(false);
+
+    fliphorMi = nullptr;
+    m_refBuilder->get_widget("fliphorMi", fliphorMi);
+    if (!fliphorMi)
+        g_warning("GtkMenuItem not found: fliphorMi");
+    fliphorMi->set_sensitive(false);
+
+    showToolbarMi = nullptr;
+    m_refBuilder->get_widget("showtoolbarMi", showToolbarMi);
+    if (!showToolbarMi)
+        g_warning("GtkCheckButton not found: showtoolbarMi");
+    
+    showStatusBarMi = nullptr;
+    m_refBuilder->get_widget("showstatbarMi", showStatusBarMi);
+    if (!showStatusBarMi)
+        g_warning("GtkCheckButton not found: showstatbarMi");
+
+    showgridMi = nullptr;
+    m_refBuilder->get_widget("showgridMi", showgridMi);
+    if (!showgridMi)
+        g_warning("GtkCheckButton not found: showgridMi");
+    showgridMi->set_active(true);
+    
+    fadeMi = nullptr;
+    m_refBuilder->get_widget("fadeMi", fadeMi);
+    if (!fadeMi)
+        g_warning("GtkCheckButton not found: fadeMi");
+
+    darkmode = nullptr;
+    m_refBuilder->get_widget("darkMi", darkmode);
+    if (!darkmode)
+        g_warning("GtkCheckButton not found: darkMi");
+
+    experimentMi = nullptr;
+    m_refBuilder->get_widget("experimentMi", experimentMi);
+    if (!experimentMi)
+        g_warning("GtkCheckButton not found: experimentMi");
+    experimentMi->set_sensitive(true);
+    
+    incrsizeMi = nullptr;
+    m_refBuilder->get_widget("increasesizeMi", incrsizeMi);
+    if (!incrsizeMi)
+        g_warning("GtkMenuItem not found: increasesizeMi");
+    if (Conf::world_size >= world_size_max)
+        incrsizeMi->set_sensitive(false);
+
+    decrsizeMi = nullptr;
+    m_refBuilder->get_widget("decreasesizeMi", decrsizeMi);
+    if (!decrsizeMi)
+        g_warning("GtkMenuItem not found: decreasesizeMi");
+    if (Conf::world_size <= world_size_min)
+        decrsizeMi->set_sensitive(false);
+
+    zoominMi = nullptr;
+    m_refBuilder->get_widget("zoominMi", zoominMi);
+    if (!zoominMi)
+        g_warning("GtkMenuItem not found: zoominMi");
+    zoominMi->set_sensitive(true);
+
+    zoomoutMi = nullptr;
+    m_refBuilder->get_widget("zoomoutMi", zoomoutMi);
+    if (!zoomoutMi)
+        g_warning("GtkMenuItem not found: zoomoutMi");
+    zoomoutMi->set_sensitive(false);
+
+    resetzoomMi = nullptr;
+    m_refBuilder->get_widget("resetzoomMi", resetzoomMi);
+    if (!resetzoomMi)
+        g_warning("GtkMenuItem not found: resetzoomMi");
+    resetzoomMi->set_sensitive(false);
+}
+
+void SimulationWindow::instanciante_toolbar_from_glade() {
+    m_ToolBar = nullptr;
+    m_refBuilder->get_widget("toolbar", m_ToolBar);
+    if (!m_ToolBar)
+        g_warning("GtkToolbar not found: toolbar");
+    else
+        m_SuperBox.pack_start(*m_ToolBar, Gtk::PACK_SHRINK);
+    m_ToolBar->set_can_focus(false);
+
+    toolbutton_new = nullptr;
+    m_refBuilder->get_widget("toolbutton_new", toolbutton_new);
+    if (!toolbutton_new)
+        g_warning("GtkToolButton not found: toolbutton_wew");
+    toolbutton_new->set_can_focus(false);
+
+    toolbutton_save = nullptr;
+    m_refBuilder->get_widget("toolbutton_save", toolbutton_save);
+    if (!toolbutton_save)
+        g_warning("GtkToolButton not found: toolbutton_save");
+    toolbutton_save->set_sensitive(false);
+
+    toolbutton_zoomin = nullptr;
+    m_refBuilder->get_widget("toolbutton_zoomin", toolbutton_zoomin);
+    if (!toolbutton_zoomin)
+        g_warning("GtkToolButton not found: toolbutton_zoomin");
+    
+    toolbutton_zoomout = nullptr;
+    m_refBuilder->get_widget("toolbutton_zoomout", toolbutton_zoomout);
+    if (!toolbutton_zoomout)
+        g_warning("GtkToolButton not found: toolbutton_zoomout");
+    toolbutton_zoomout->set_sensitive(false);
+
+    toolbutton_resetzoom = nullptr;
+    m_refBuilder->get_widget("toolbutton_resetzoom", toolbutton_resetzoom);
+    if (!toolbutton_resetzoom)
+        g_warning("GtkToolButton not found: toolbutton_resetzoom");
+    toolbutton_resetzoom->set_sensitive(false);
 }
 
 void SimulationWindow::create_refresh_scale() {
@@ -1201,56 +1615,35 @@ void SimulationWindow::create_control_buttons() {
     m_Button_Start.get_style_context()->add_provider(css_provider,
         GTK_STYLE_PROVIDER_PRIORITY_USER);
     m_Button_Start.override_color(Gdk::RGBA("white"));
-    m_Button_Start.signal_clicked().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_start_clicked));
+
     m_Button_Start.set_property("can-focus", false);
 
     // Create Step button
     m_ButtonBox.pack_start(m_Button_Step);
-    m_Button_Step.signal_clicked().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_step_clicked));
     m_Button_Step.set_property("can-focus", false);
 
     // Create Clear button
     m_ButtonBox.pack_start(m_Button_Clear);
-    m_Button_Clear.signal_clicked().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_clear_clicked));
     m_Button_Clear.set_property("can-focus", false);
 
     // Create Random button
     m_ButtonBox.pack_start(m_Button_Random);
-    m_Button_Random.signal_clicked().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_random_clicked));
     m_Button_Random.set_property("can-focus", false);
 
     // Create Reset button
     m_ButtonBox.pack_start(m_Button_Reset);
-    m_Button_Reset.signal_clicked().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_reset_clicked));
     m_Button_Reset.set_property("can-focus", false);
     m_Button_Reset.set_sensitive(false);
 
     // Create a separator
     m_ButtonBox.pack_start(m_Sep);
     m_Sep.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
-
-    // Create GosperCanon button
-    m_ButtonBox.pack_start(m_Button_Canon);
-    m_Button_Canon.signal_toggled().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_gosper_clicked));
-    m_Button_Canon.set_property("can-focus", false);
-
-    // Create SpaceFiller button
-    m_ButtonBox.pack_start(m_Button_Max);
-    m_Button_Max.signal_toggled().connect(sigc::mem_fun(*this,
-            &SimulationWindow::on_button_max_clicked));
-    m_Button_Max.set_property("can-focus", false);
 }
 
 void SimulationWindow::create_StatusBar() {
     // - for the simulation size
     m_LabelSize.set_text(m_LabelSize.get_text() + std::to_string(Conf::world_size)
-                        + " x " + std::to_string(Conf::world_size));
+                        + " x " + std::to_string(Conf::world_y_max));
     m_LabelSize.set_halign(Gtk::ALIGN_END);
     m_LabelSize.set_hexpand(false);
     // - for the zoom level
@@ -1258,15 +1651,15 @@ void SimulationWindow::create_StatusBar() {
     m_LabelZoom.set_halign(Gtk::ALIGN_END);
     m_LabelZoom.set_hexpand(false);
     // - for the coordinates
-    m_LabelCoordinates.set_text("x : " + x + "    y : " +y);
+    m_LabelCoordinates.set_text("x=" + x + "    y=" +y);
     m_LabelCoordinates.set_halign(Gtk::ALIGN_END);
     m_LabelCoordinates.set_hexpand(false);
     // - for the sim. info
-    m_Label_Info.set_label("<b>Generation : " + std::to_string(val) + "</b>");
+    m_Label_Info.set_label("<b>Generation=" + std::to_string(val) + "</b>");
     m_Label_Info.set_halign(Gtk::ALIGN_END);
     m_Label_Info.set_hexpand(false);
     m_Label_Info.set_use_markup(true);
-    m_Label_Population.set_label("<b>Population : " + std::to_string(get_alive()) + "</b>");
+    m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
     m_Label_Population.set_halign(Gtk::ALIGN_END);
     m_Label_Population.set_hexpand(false);
     m_Label_Population.set_use_markup(true);
@@ -1343,69 +1736,74 @@ void SimulationWindow::create_ComboBoxes() {
             &SimulationWindow::on_combo_dark_changed));
 }
 
-void SimulationWindow::read_settings() {
-    GKeyFile *key_file;
-    GError *error;
+void SimulationWindow::create_patterns_ComboBox() {
+    m_pattTreeModel = Gtk::ListStore::create(m_Columns);
+    m_ComboPatt.set_model(m_pattTreeModel);
 
-    gint color_scheme_light;
-    gint color_scheme_dark;
+    Gtk::TreeRow row;
+    const size_t len(PATTERNS_DIR.length());
 
-    key_file = g_key_file_new();
-    error = NULL;
-
-    if (!g_key_file_load_from_file(key_file,
-                                   "etc/gtk-3.0/settings.ini",
-                                   G_KEY_FILE_KEEP_COMMENTS,
-                                   &error))
-    {
-        g_debug("%s", error->message);
+    for (const auto& entry : fs::directory_iterator(PATTERNS_DIR)) {
+        row = *(m_pattTreeModel->append());
+        std::string pattern_name(entry.path().string().replace(0, len, ""));
+        row[m_Columns.m_col_name] = pattern_name;
     }
-    else {
-        color_scheme_light = g_key_file_get_integer(key_file,
-                                                   "Preferences",
-                                                   "color-scheme-light",
-                                                   &error);
-        color_scheme_dark = g_key_file_get_integer(key_file,
-                                                  "Preferences",
-                                                  "color-scheme-dark",
-                                                  &error);
+    m_ComboPatt.pack_start(m_Columns.m_col_name);
+    m_ComboPatt.pack_start(m_cell);
+}
 
-        m_ComboLight.set_active(color_scheme_light);
-        m_ComboDark.set_active(color_scheme_dark);
+void SimulationWindow::read_settings() {
+    Glib::KeyFile keyFile;
+    const Glib::ustring settings_grp("Settings");
+    const Glib::ustring pref_group("Preferences");
+    const Glib::ustring light_s_key("color-scheme-light");
+    const Glib::ustring dark_s_key("color-scheme-dark");
+    const Glib::ustring dark_theme_key("gtk-application-prefer-dark-theme");
+    unsigned light_s_keyval, dark_s_keyval;
+    bool dark_theme_keyval;
+
+    keyFile.load_from_file(SETTINGS_INI_FILE, Glib::KEY_FILE_KEEP_COMMENTS);
+    light_s_keyval = keyFile.get_integer(pref_group, light_s_key);
+    dark_s_keyval = keyFile.get_integer(pref_group, dark_s_key);
+    dark_theme_keyval = keyFile.get_boolean(settings_grp, dark_theme_key);
+
+    m_ComboLight.set_active(light_s_keyval);
+    m_ComboDark.set_active(dark_s_keyval);
+    if (dark_theme_keyval) {
+        dark_theme_on = true;
+        darkmode->set_active(true);
     }
 }
 
-SimulationWindow::~SimulationWindow() {
+void SimulationWindow::write_settings() {
+    const std::string light_s_key("color-scheme-light");
+    const std::string dark_s_key("color-scheme-dark");
+    const std::string dark_theme_key("gtk-application-prefer-dark-theme");
+    const std::string light_s_new_keyval(std::to_string(m_ComboLight.get_active_row_number()));
+    const std::string dark_s_new_keyval(std::to_string(m_ComboDark.get_active_row_number()));
+    std::string dark_theme_new_keyval;
+    if (dark_theme_on) dark_theme_new_keyval = "1";
+    else dark_theme_new_keyval = "0";
 
-    std::ifstream inFile("etc/gtk-3.0/settings.ini");
-    std::ofstream outFile;
-    std::string line;
-    bool found = false;
+    std::ifstream settings(SETTINGS_INI_FILE);
+    std::ostringstream ss;
+    ss << settings.rdbuf();
+    std::string str(ss.str());
 
-    outFile.open("etc/gtk-3.0/temp.ini");
-
-    if (!inFile.fail()) {
-        while (!inFile.eof()) {
-            getline(inFile, line);
-            if (line.find("color-scheme-light") != std::string::npos ||
-                line.find("color-scheme-dark") != std::string::npos) {
-                    found = true;
-                    continue;
-            }
-            outFile << line;
-            if (!found) {
-                outFile << "\n";
-            }
-        }
+    if (!settings.fail()) {
+        size_t pos(str.find(light_s_key));
+        str.replace(pos + light_s_key.length() + 1, 1, light_s_new_keyval);
+        pos = str.find(dark_s_key);
+        str.replace(pos + dark_s_key.length() + 1, 1, dark_s_new_keyval);
+        pos = str.find(dark_theme_key);
+        str.replace(pos + dark_theme_key.length() + 1, 1, dark_theme_new_keyval);
     }
-    outFile << "color-scheme-light=" << m_ComboLight.get_active_row_number() << "\n";
-    outFile << "color-scheme-dark=" << m_ComboDark.get_active_row_number() << "\n";
 
-    outFile.close();
-    inFile.close();
+    settings.close();
+    std::ofstream edited_settings(SETTINGS_INI_FILE);
+    edited_settings << str;
+}
 
-    char settings[] = "etc/gtk-3.0/settings.ini";
-    char temp[] = "etc/gtk-3.0/temp.ini";
-    std::remove(settings);
-    std::rename(temp, settings);
+SimulationWindow::~SimulationWindow() {
+    write_settings();
 }

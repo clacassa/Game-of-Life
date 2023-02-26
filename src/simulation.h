@@ -1,5 +1,5 @@
 /*
- *  simulation.h -- GameofLife -- GUI with various options and view controls
+ *  simulation.h -- GoL Lab -- GUI with various options and view controls
  *  Copyright (C) 2022 Cyprien Lacassagne
 
  *  This program is free software: you can redistribute it and/or modify
@@ -19,41 +19,82 @@
 #ifndef SIMULATION_H_INCLUDED
 #define SIMULATION_H_INCLUDED
 
-#include "config.h"
 #include <iostream>
 #include <vector>
 #include <string>
+#include "config.h"
+#include "graphic.h"
 
-enum Error_reading { READING_OPENING, READING_WORLDSIZE, READING_END, BAD_EXTENSION };
 enum Mode { EXPERIMENTAL, NORMAL };
 
-void save_file(std::string filename);
+/**
+ * Erase the absolute file path to keep only the file name.
+ */
+std::string filename_from_filepath(std::string filepath);
+
+/** 
+ * Decode pseudo_L.06 format.
+ * @param filename Plain text file to be read.
+ * @return The decoding result (1: success, 0: failure).
+ */
 bool read_file(std::string filename);
-void line_decoding(std::string line);
-void error(Error_reading code);
+
+/**
+ * Save the simulation in pseudo-L.06 format.
+ * @param filename Plain text file to be written.
+ * @note If the file does not exist yet, a new file is created.
+ */
+void save_file(std::string filename);
+
+/**
+ * Decode RLE format.
+ * @param filename RLE file to be read.
+ * @return A vector storing the coordinates couples.
+*/
+std::vector<Pos> get_rle_data(std::string filename);
+
+/**
+ * Get all live cells within a rectangular area.
+ * @return A vector storing the coordinates couples.
+ */
+std::vector<Pos> get_live_cells_in_area(unsigned x_min, unsigned x_max,
+                                        unsigned y_min, unsigned y_max);
+
+/** 
+ * @return The L.06 decoding error ID.
+ */
 unsigned get_error_id();
+
 unsigned get_alive();
-
 void display();
+
+/**
+ * Reset everything.
+ */
 void init();
+
+/** 
+ * Update the simulation (compute the n+1 state).
+ * @param mode The specified simulation mode.
+ * @return <tt>true</tt> if the simulation is stabilized (requires EXPERIMENTAL mode).
+ */
 bool update(Mode mode = NORMAL);
+
+/**
+ * Resize the 2D vector acording to the current world size.
+ */
 void adjust_bool_grid();
+
 void toggle_fade_effect();
-void fade_update();
-
-void draw_canon_planeur(unsigned x, unsigned y);
-void erase_canon_planeur(unsigned x, unsigned y);
-void draw_spacefiller(unsigned x, unsigned y);
-void erase_spacefiller(unsigned x, unsigned y);
-
-unsigned neighbours(unsigned x, unsigned y);
-void birth_test(unsigned x, unsigned y);
 
 void new_birth(unsigned x, unsigned y);
 void new_death(unsigned x, unsigned y);
+void new_pattern(unsigned x, unsigned y, std::vector<Pos> pattern);
+void del_pattern(unsigned x, unsigned y, std::vector<Pos> pattern);
 
-// Ask to draw the cells that are alive at the current 
-// state of the simulation
+/**
+ * Call a graphic function to draw the live cells.
+ */
 void draw_cells(unsigned color_theme);
 
 #endif

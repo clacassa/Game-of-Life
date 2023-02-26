@@ -1,5 +1,5 @@
 /*
- *  config.cc -- GameofLife -- GUI with various options and view controls
+ *  config.cc -- GoL Lab -- GUI with various options and view controls
  *  Copyright (C) 2022 Cyprien Lacassagne
 
  *  This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,11 @@
 #include "config.h"
 
 unsigned Conf::world_size = reserve;
+// unsigned Conf::world_y_max = reserve/2;
+unsigned Conf::world_y_max = reserve;
 
 void Conf::set_world_size(unsigned wsize) {
     world_size = wsize;
+    // world_y_max = world_size/2;
+    world_y_max = world_size;
 }

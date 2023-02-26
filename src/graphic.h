@@ -1,5 +1,5 @@
 /*
- *  graphic.h -- GameofLife -- GUI with various options and view controls
+ *  graphic.h -- GoL Lab -- GUI with various options and view controls
  *  Copyright (C) 2022 Cyprien Lacassagne
 
  *  This program is free software: you can redistribute it and/or modify
@@ -19,6 +19,8 @@
 #ifndef GRAPHIC_H_INCLUDED
 #define GRAPHIC_H_INCLUDED
 
+#include <vector>
+
 struct Color {
     double r;
     double g;
@@ -26,9 +28,7 @@ struct Color {
 };
 
 struct Scheme {
-    // Foreground color
     Color fg;
-    // Background color
     Color bg;
 };
 
@@ -56,16 +56,20 @@ constexpr Color gray4({0.19, 0.19, 0.19});
 constexpr Scheme DefaultLight({black, white});
 constexpr Scheme DefaultDark({white, black});
 // Alternate
-constexpr Scheme Jade({white, dark_blueish_green});
+constexpr Scheme Jade({gray1, dark_blueish_green});
 constexpr Scheme Basalt({white, gray3});
 constexpr Scheme Asphalt({gray, black});
 constexpr Scheme Albaster({black, gray1});
-constexpr Scheme DeepBlue({gray1, night_blue});
+constexpr Scheme DeepBlue({gray2, night_blue});
 
 
 void graphic_draw_world(double xMax, double yMax, unsigned ref_color, bool show_grid, unsigned delta);
-void graphic_draw_cell(unsigned x, unsigned y, unsigned ref_color);
+void graphic_draw_cell(unsigned x, unsigned y, unsigned ref_color, float fg_r_offset = 0.0, 
+                                            float fg_g_offset = 0.0, float fg_b_offset = 0.0);
 void graphic_fade_dead(unsigned x, unsigned y, const Color gray);
+void graphic_ghost_pattern(unsigned x, unsigned y, std::vector<Pos> cells, unsigned ref_color);
+void graphic_draw_select_rec(unsigned x_0, unsigned y_0, unsigned x, unsigned y, unsigned ref_color);
+void graphic_highlight_selected_cells(std::vector<Pos> selected_cells, unsigned ref_color);
 void graphic_change_light_color_scheme(unsigned id);
 void graphic_change_dark_color_scheme(unsigned id);
 
