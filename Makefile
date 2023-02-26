@@ -1,6 +1,6 @@
-OUT = GameofLife
+OUT = gol_lab
 CXX = g++
-CXXFLAGS = -g -Wall -std=c++11 -O3
+CXXFLAGS = -g -Wall -O3 -std=c++17 
 LINKING = `pkg-config --cflags gtkmm-3.0`
 LDLIBS = `pkg-config --libs gtkmm-3.0`
 EXEDIR = ./bin
@@ -14,7 +14,7 @@ OFILES = $(OBJ:%=$(OBJ_DIR)/%)
 # On Windows, start the program without a console in the background
 # and link an icon to itself so it appears in the taskbar
 ifeq ($(OS),Windows_NT)
-CXXFLAGS += -mwindows
+# CXXFLAGS += -mwindows
 RESFILES = ./res/my.res
 endif
 
