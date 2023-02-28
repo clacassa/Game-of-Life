@@ -10,7 +10,8 @@ LINKING = -I ./include/atk-1.0 -I ./include/atkmm-1.6 -I ./lib/atkmm-1.6/include
 		  -I ./lib/glib-2.0/include -I ./include/glibmm-2.4 -I ./lib/glibmm-2.4/include \
 		  -I ./include/gtk-3.0 -I ./include/gtkmm-3.0 -I ./lib/gtkmm-3.0/include \
 		  -I ./include/harfbuzz -I ./include/pango-1.0 -I ./include/pangomm-1.4 \
-		  -I ./lib/pangomm-1.4/include -I ./include/sigc++-2.0 -I ./lib/sigc++-2.0/include
+		  -I ./lib/pangomm-1.4/include -I ./include/sigc++-2.0 -I ./lib/sigc++-2.0/include \
+		  -I ./include/fontconfig
 
 LDLIBS = -L ./lib/ -lgtkmm-3.0 -latkmm-1.6 -lgdkmm-3.0 -lgiomm-2.4 -lpangomm-1.4 -lglibmm-2.4 \
 			       -lgtk-3 -lgdk-3 -lpangocairo-1.0 -lpango-1.0 -lharfbuzz -latk-1.0 \
