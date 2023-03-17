@@ -1,10 +1,7 @@
 
 # About GoL Lab
 
-GoL Lab is a program that lets you explore the famous cellular automaton Game of Life (GoL)  
-created by the mathematician John Conway in the late 60's. It features view controls, editing  
-and basic simulation tools, such as stability detection and RLE file format parser.  
-GoL Lab is a free software, licensed under the GPL and written in C++.  
+GoL Lab is a program that lets you explore the famous cellular automaton Game of Life (GoL) created by the mathematician John Conway in the late 60's. It features view controls, editing and basic simulation tools, such as stability detection and RLE file format parser. GoL Lab is a free software, licensed under the GPL and written in C++.  
 
 ## Dev notes
 
