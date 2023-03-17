@@ -24,13 +24,16 @@ GoL Lab uses gtkmm v3.0 as GUI toolkit.
 Unfortunately, gtkmm3 is not easy to distribute. Until I figure how to properly do it, you  
 will need to install it on your system:  
 
- - MacOS  
+### MacOS  
+
     brew install gtkmm3  
     
- - Debian/Ubuntu Linux  
+### Debian/Ubuntu Linux  
+
     apt-get install libgtkmm-3.0-dev  
     
-  - Fedora/RedHat Linux  
+### Fedora/RedHat Linux 
+ 
     yum install gtkmm3.0-devel  
     
 You can then build GoL Lab from the github repository: https://github.com/clacassa/GoL-Lab  
