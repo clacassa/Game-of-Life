@@ -42,18 +42,20 @@ Just edit the value of the `gtk-theme-name` key as following:
   
 To give a native look to the GUI,  
 - On MacOS: replace `Venta` with `MacOS`.  
-- On Windows: `Venta` should do the job for Windows 10, but you can try `Windows-10-Acrylic`  
+- On Windows:  `Venta` should do the job, but you can try the built-in Windows theme `win32`. Note however that some ui elements are missing and that Dark mode is not available.   
 
 If the native look is not you proprity, feel free to try out these good loocking themes:  
 - Skeuos-Green
-- Orchis
+- Shades-of-gray  (really nice, but comes with no Light mode)  
 
-The themes are stored in `share/themes` and all have a dark variant.  
+The themes are stored in `share/themes`.  
+
+## Features
+
+## Todo
 
 ## Credits
 
 - [MacOS](https://github.com/B00merang-Project/macOS)  
-- [Orchis](https://github.com/vinceliuice/Orchis-theme)  
 - [Skeuos-Green](https://github.com/daniruiz/skeuos-gtk)  
 - [Venta](https://www.gnome-look.org/p/1386774)  
-- [Windows-10-Acrylic](https://github.com/B00merang-Project/Windows-10-Acrylic)
