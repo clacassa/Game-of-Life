@@ -5,7 +5,7 @@ GoL Lab is a program that lets you explore the famous cellular automaton Game of
 
 ## Dev notes
 
-Last commit: Mar 11, 2023  
+Version in development: 0.3.0 (Soon 1.0.0 !)  
 Please note that the Stability Detection feature needs some improvement, as it currently memorizes the last five generations and if a repeating pattern is found, stops the simulation.  
 
 ## Installation
