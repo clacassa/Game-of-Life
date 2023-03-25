@@ -1,16 +1,12 @@
 
-# About GoL Lab
+## About GoL Lab
 
-GoL Lab is a program that lets you explore the famous cellular automaton Game of Life (GoL)  
-created by the mathematician John Conway in the late 60's. It features view controls, editing  
-and basic simulation tools, such as stability detection and RLE file format parser.  
-GoL Lab is a free software, licensed under the GPL and written in C++.  
+GoL Lab is a program that lets you explore the famous cellular automaton Game of Life (GoL) created by the mathematician John Conway in the late 60's. It features view controls, editing and basic simulation tools, such as stability detection and RLE file format parser. GoL Lab is a free software, licensed under the GPL and written in C++.  
 
 ## Dev notes
 
 Last commit: Mar 11, 2023  
-Please note that the Stability Detection feature needs some improvement, as it currently  
-memorizes the last five generations and if a repeating pattern is found, stops the simulation  
+Please note that the Stability Detection feature needs some improvement, as it currently memorizes the last five generations and if a repeating pattern is found, stops the simulation.  
 
 ## Installation
 
@@ -20,9 +16,8 @@ memorizes the last five generations and if a repeating pattern is found, stops t
 
 ## Building the application
 
-GoL Lab uses gtkmm v3.0 as GUI toolkit.  
-Unfortunately, gtkmm3 is not easy to distribute. Until I figure how to properly do it, you  
-will need to install it on your system:  
+GoL Lab uses gtkmm-3.0.    
+Unfortunately, gtkmm is not easy to distribute. Until I figure how to properly do it, you will need to install it on your system:  
 
 #### MacOS  
 
@@ -32,17 +27,17 @@ will need to install it on your system:
 
     apt-get install libgtkmm-3.0-dev  
     
-#### Fedora/RedHat Linux 
+#### Fedora/RedHat Linux  
 
     yum install gtkmm3.0-devel  
     
-You can then build GoL Lab from the github repository: https://github.com/clacassa/GoL-Lab  
-with `make` from your installation directory.
+You can then download and exctract the source code, and build GoL Lab with `make` from your installation directory.  
 
 ## Customization
 
-You can customize the appearance of GoL Lab by editing the file *etc/gtk-3.0/settings.ini*.  
-Note that as the application is built with GTK, Linux users who have a GNOME desktop environment are not concerned by this section, as their GTK system theme will override GoL Lab settings.   
+You can customize the appearance of GoL Lab by editing the file `etc/gtk-3.0/settings.ini`.  
+Note that as the application is built with GTK, Linux users who have a GNOME desktop environment are not concerned by this section, as their GTK system theme will override GoL Lab settings.  
+  
 Just edit the value of the `gtk-theme-name` key as following: 
   
 To give a native look to the GUI,  
@@ -53,7 +48,7 @@ If the native look is not you proprity, feel free to try out these good loocking
 - Skeuos-Green
 - Orchis
 
-The themes are stored in *share/themes/* and all have a dark variant.  
+The themes are stored in `share/themes` and all have a dark variant.  
 
 ## Credits
 
