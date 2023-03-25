@@ -1,6 +1,24 @@
+# Makefile
+# This file is part of GoL Lab, a simulator of Conway's game of life.
+#
+# Copyright (C) 2022 - Cyprien Lacassagne
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 OUT = gol_lab
 CXX = g++
-CXXFLAGS = -g -Wall -O3 -std=c++17 
+CXXFLAGS = -g -Wall -O3 -std=c++17
 LINKING = `pkg-config --cflags gtkmm-3.0`
 LDLIBS = `pkg-config --libs gtkmm-3.0` -L ./lib/ -lshlwapi
 EXEDIR = ./bin
@@ -8,38 +26,51 @@ SRC_DIR = ./src
 OBJ_DIR = ./obj
 SRCS = main.cc gui.cc simulation.cc graphic.cc config.cc
 CXXFILES = $(SRCS:%=$(SRC_DIR)/%)
-OBJ = $(SRCS:.cc=.o)
-OFILES = $(OBJ:%=$(OBJ_DIR)/%)
+OFILES = $(SRCS:.cc=.o)
 
 # On Windows, start the program without a console in the background
 # and link an icon to it so it appears in the taskbar
 ifeq ($(OS),Windows_NT)
-# CXXFLAGS += -mwindows
+CXXFLAGS += -mwindows
 RESFILES = ./res/my.res
 endif
 
-all: $(EXEDIR)/$(OUT)
+all: setup $(EXEDIR)/$(OUT)
+	@mv *.o $(OBJ_DIR)
 
 $(EXEDIR)/$(OUT): $(OFILES)
-	$(CXX) $(LINKING) $(OFILES) $(RESFILES) -o $@ $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $(LINKING) $(OFILES) $(RESFILES) -o $@ $(LDLIBS)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cc
-	@mkdir -p $(dir $@)
+%.o: $(SRC_DIR)/%.cc
 	$(CXX) $(CXXFLAGS) $(LINKING) -c $< -o $@ $(LINKING)
 
-$(OBJ_DIR)/main.o: $(SRC_DIR)/simulation.h $(SRC_DIR)/gui.h
-
-$(OBJ_DIR)/simulation.o: $(SRC_DIR)/simulation.h $(SRC_DIR)/graphic.h $(SRC_DIR)/config.h
-
-$(OBJ_DIR)/gui.o: $(SRC_DIR)/gui.h $(SRC_DIR)/graphic_gui.h $(SRC_DIR)/graphic.h \
-				  $(SRC_DIR)/simulation.h $(SRC_DIR)/config.h
-
-$(OBJ_DIR)/graphic.o: $(SRC_DIR)/graphic_gui.h $(SRC_DIR)/graphic.h $(SRC_DIR)/config.h
-
-$(OBJ_DIR)/config.o: $(SRC_DIR)/config.h
-
+.PHONY: setup
+setup:
+	@mkdir -p $(OBJ_DIR)
+	@if [ -f "$(OBJ_DIR)/main.o" ]; \
+	then mv $(OBJ_DIR)/* . ;\
+	fi
 
 .PHONY: clean
 clean:
-	@rm -f $(EXEDIR)/$(OUT) $(OFILES) && rmdir $(OBJ_DIR)
+	@rm -f $(EXEDIR)/$(OUT) && rm -r -f  $(OBJ_DIR)
 
+.PHONY: depend
+depend:
+	@echo " *** MIS A JOUR DES DEPENDANCES ***"
+	@(sed '/^# DO NOT DELETE THIS LINE/q' Makefile && \
+		$(CXX) -MM $(CXXFLAGS) $(CXXFILES) | \
+		egrep -v "/usr/include") > Makefile.new
+	@mv Makefile.new Makefile
+
+#
+# -- Regles de dependances generes automatiquement -- 
+#
+#  DO NOT DELETE THIS LINE
+main.o: src/main.cc src/simulation.h src/config.h src/graphic.h src/gui.h
+gui.o: src/gui.cc src/gui.h src/simulation.h src/config.h src/graphic.h \
+ src/graphic_gui.h src/prefs.h
+simulation.o: src/simulation.cc src/simulation.h src/config.h \
+ src/graphic.h
+graphic.o: src/graphic.cc src/graphic_gui.h src/graphic.h src/config.h
+config.o: src/config.cc src/config.h
