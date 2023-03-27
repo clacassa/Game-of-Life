@@ -38,7 +38,7 @@ You can then download and exctract the source code, and build GoL Lab with `make
 The followging features are currently implemented in GoL Lab :  
 
 | Action  | Shortcut | Description |  
-|  :--:   |   :--:   |    :--      |
+|  :--    |   :--    |    :--      |
 | New     | Ctrl + N | Resets everything with a new blank simulation (closes any opened file) |  
 | Open    | Ctrl + O | Opens a text file to configure the simulation |
 | Save    | Ctrl + S | Saves the simulation |
