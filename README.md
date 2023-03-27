@@ -38,9 +38,9 @@ You can then download and exctract the source code, and build GoL Lab with `make
 The followging features are currently implemented in GoL Lab :  
 
 | Action  | Shortcut | Description |  
-| :--     | :--      | :--         |
+|  :--:   |   :--:   |    :--:     |
 | New     | Ctrl + N | Resets everything with a new blank simulation (closes any opened file) |  
-| Open    | Ctrl + V | Opens a text file to configure the simulation |
+| Open    | Ctrl + O | Opens a text file to configure the simulation |
 | Save    | Ctrl + S | Saves the simulation |
 | Save as | Ctrl + Shift + S | Renames the opend file or creates a new file, and saves the simulation |
 | Quit    | Ctrl + Q | Quits instantly the application without saving |
@@ -66,14 +66,14 @@ The followging features are currently implemented in GoL Lab :
 | Stability detection | Ctrl + T | Toggles the detection of stability : when enabled, the simulation stops as soon as it stabilizes |
 | World size > Increase | Ctrl + PageUp | Increases the world dimensions by 100 cells |
 | World size > Decrease | Ctrl + PageDown | Decreases the world dimensions by 100 cells |
-| Insert pattern | Ctrl + P | Inserts a pattern among the ones stored in `patterns` directory |
+| Insert pattern | Ctrl + P | Inserts a pattern among the ones stored in `patterns/` |
 | Help | F1 | Shows a help message similar to this brief documentation |
 | About GoL Lab | | Shows information relative to GoL Lab, such as the build, the logo, the license and the author |
 
 ## Customization
 
 You can customize the appearance of GoL Lab by editing the file `etc/gtk-3.0/settings.ini`.  
-Note that as the application is built with GTK, Linux users who have a GNOME desktop environment are not concerned by this section, as their GTK system theme will override GoL Lab settings.  
+Note that as the application is built with GTK, Linux users might not be concerned by this section, as their system theme can override GoL Lab settings.  
   
 Just edit the value of the `gtk-theme-name` key as following: 
   
