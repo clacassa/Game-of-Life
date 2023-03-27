@@ -50,7 +50,7 @@ The followging actions are currently implemented in GoL Lab :
 | Paste                 | Ctrl + V         | Pastes the content of the clipboard |
 | Select all            | Ctrl + A         | Selects the whole board |
 | Random Fill           | Ctrl + R         | Fills 50% of the board randomly |
-| Rotate 180°           |                  | Rotates the selection counter-clockwise by 180° |
+| Rotate 90°            | R                | Rotates the selection counter-clockwise by 90° |
 | Flip vertically       | Y                | Flips the inserted pattern or the pasted selection vertically |
 | Flip horizontally     | X                | Same as above but horizontally |
 | Cursor Mode > Draw    | F2               | Switches to drawing mode |
@@ -59,7 +59,7 @@ The followging actions are currently implemented in GoL Lab :
 | Zoom in               | Ctrl + +, Mouse wheel up | Zooms in by 10% |
 | Zoom out              | Ctrl + -, Mouse wheel down | Zooms out by 10% |
 | Reset zoom            | Ctrl + 0         | Restores the zoom to its default value |
-| Show grid             |                  | Toggles the display of the grid |
+| Show grid             | Ctrl + G         | Toggles the display of the grid |
 | Fade effect           |                  | Toggles an effect in which the cells fade when they die (decreases the fps) |
 | Dark theme            | Ctrl + D         | Toggles light/dark theme |
 | Color scheme          |                  | Allows you to change the color scheme independantly for light/dark mode |
