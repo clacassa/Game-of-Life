@@ -1,11 +1,11 @@
 
 ## About GoL Lab
 
-GoL Lab is a program to explore the famous cellular automaton Game of Life (GoL) created by the mathematician John Conway in the late 60's. It features view controls, editing and basic simulation tools, such as stability detection and RLE file format parser. GoL Lab is a free software, licensed under the GPL and written in C++.  
+GoL Lab is a laboratory to explore the famous cellular automaton Game of Life (GoL) thought by the mathematician John Conway in the late 60's. It features view controls, editing and basic simulation tools, such as stability detection and RLE file format parser. GoL Lab is a free software, licensed under the GPL and written in C++.  
 
 ## Dev notes
 
-Version in development: 0.3.0 (Soon 1.0.0 !)  
+Version in development: 0.3.0
 Please note that the Stability Detection feature needs some improvement, as it currently memorizes the last five generations and if a repeating pattern is found, stops the simulation.  
 
 ## Installation (Windows only)
@@ -17,7 +17,7 @@ Please note that the Stability Detection feature needs some improvement, as it c
 ## Building the application
 
 GoL Lab uses gtkmm-3.0.    
-Unfortunately, this library is huge and not easy to distribute. Until I figure how to properly do it, you will need to install it on your system:  
+Unfortunately, this library is huge and not easy to distribute. Until I figure how to properly do it, you will need to install it on your system :  
 
 #### MacOS  
 
@@ -35,7 +35,7 @@ You can then download and exctract the source code, and build GoL Lab with `make
 
 ## Features  
 
-The followging features are currently implemented in GoL Lab :  
+The followging actions are currently implemented in GoL Lab :  
 
 | Action                | Shortcut         | Description |
 | --------------------- | ---------------- | ----------- |
@@ -75,7 +75,7 @@ The followging features are currently implemented in GoL Lab :
 You can customize the appearance of GoL Lab by editing the file `etc/gtk-3.0/settings.ini`.  
 Note that as the application is built with GTK, Linux users might not be concerned by this section, as their system theme can override GoL Lab settings.  
   
-Just edit the value of the `gtk-theme-name` key as following: 
+Just edit the value of the `gtk-theme-name` key as following : 
   
 To give a native look to the GUI,  
 - On MacOS: replace `Venta` with `MacOS`.  
