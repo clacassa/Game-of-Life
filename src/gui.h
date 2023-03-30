@@ -1,20 +1,22 @@
 
 /*
- *  gui.h -- GoL Lab -- GUI with various options and view controls
- *  Copyright (C) 2022 Cyprien Lacassagne
-
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
-
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
-
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * gui.h
+ * This file is part of GoL Lab, a simulator of Conway's game of life.
+ *
+ * Copyright (C) 2022 - Cyprien Lacassagne
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef GUI_H_INCLUDED
@@ -23,17 +25,9 @@
 #include <gtkmm.h>
 #include "simulation.h"
 
-// Parse what action has to be done by "on_motion_notify_event"
-// Because it does not have access to the "event->button" information
-enum ButtonType {NONE, LEFT, RIGHT, MIDDLE};
+enum Action { DRAW, SELECT, DRAG };
 
-enum Action {DRAW, SELECT, DRAG};
-
-const std::string ERR_OPEN_FILE("Failed opening the file\nMake sure the file exists");
-const std::string ERR_CONFIG_FILE("Failed configuring the simulation due to invalid values\n");
-const std::string ERR_EXT_FILE("The file has to be a plain text file (.txt)");
-
-struct Frame{
+struct Frame {
     double xMin;
     unsigned xMax;
     double yMin;
@@ -41,36 +35,42 @@ struct Frame{
     double asp, height, width;
 };
 
-struct Point
-{
+struct Point {
 	double x;
 	double y;
 };
 
-// Adjust the view range according to the world dimensions
-void set_default_frame();
+constexpr unsigned refresh_min(5);
+constexpr unsigned refresh_max(500);
+constexpr unsigned zoom_min(100);
+constexpr unsigned zoom_max(200);
+
+//===========================================
 
 class MyArea : public Gtk::DrawingArea {
 public:
     MyArea();
     virtual ~MyArea();
+    // ------ Member functions ------
     void clear();
     void draw();
     void setFrame(Frame x);
     void adjustFrame();
     void refresh();
-    void set_pattern(std::vector<Pos> data) { pattern = data; }
-    void set_selection(std::vector<Pos> sel) { selection = sel; }
-    void set_clipboard(std::vector<Pos> clip) { clipboard = clip; }
-    std::vector<Pos> get_pattern() { return pattern; }
-    std::vector<Pos> get_selection() { return selection; }
-    std::vector<Pos> get_clipboard() { return clipboard; }
     void flip_pattern_left_right();
     void flip_pattern_up_down();
     void rotate_pattern();
-    std::vector<Pos> rebase_coords(std::vector<Pos> abs_coords);
+    std::vector<Coordinates> rebase_coords(std::vector<Coordinates> abs_coords);
 
-    // --- Signal handlers ---    
+    void set_pattern(std::vector<Coordinates> data) { pattern = data; }
+    void set_selection(std::vector<Coordinates> sel) { selection = sel; }
+    void set_clipboard(std::vector<Coordinates> clip) { clipboard = clip; }
+
+    std::vector<Coordinates> get_pattern() const { return pattern; }
+    std::vector<Coordinates> get_selection() const { return selection; }
+    std::vector<Coordinates> get_clipboard() const { return clipboard; }
+
+    // ------ Signal handlers ------   
     bool on_enter_notify_event(GdkEventCrossing * crossing_event);
     bool on_leave_notify_event(GdkEventCrossing * crossing_event);
 protected:
@@ -82,7 +82,7 @@ private:
     Frame frame;
     Point p1, p2;
     bool empty;
-    std::vector<Pos> pattern, selection, clipboard;
+    std::vector<Coordinates> pattern, selection, clipboard;
     enum Rotate {
         NORTH,
         EAST,
@@ -103,14 +103,16 @@ public:
 
 class SimulationWindow : public Gtk::Window {
 public:
-    SimulationWindow(Glib::RefPtr<Gtk::Application>, std::string __filename);
+    SimulationWindow(Glib::RefPtr<Gtk::Application>, std::string __filename, int result);
     virtual ~SimulationWindow();
     // Display an error message if the file passed as argument in CLI is unexploitable
-    void parse_file_error();
+    void parse_file_error(int parsing_result);
 protected:
-    void create_main_action_group(Glib::RefPtr<Gtk::Application> app);
-    void instanciate_menubar_from_glade();
-    void instanciante_toolbar_from_glade();
+    // ------ Member functions ------
+    void set_default_frame();
+    void create_action_groups(Glib::RefPtr<Gtk::Application> app);
+    void instantiate_menubar_from_glade();
+    void instantiate_toolbar_from_glade();
     // Create accelerators (shortcuts) for MenuBar items
     void create_refresh_scale();
     void create_control_buttons();
@@ -121,17 +123,17 @@ protected:
     void updt_statusbar_coord();
     void file_modified();
     // Error dialog relative to file opening or reading
-    void error_dialog_open(std::string error_message);
+    void error_dialog_open(Glib::ustring error_message, Glib::ustring details);
 
     void read_settings();
     void write_settings();
 
     void update_cursor();
-
-    void update_selection();
     void drag_frame();
+    void update_selection();
+    void draw(unsigned x, unsigned y);
 
-    // -----Signal handlers-----
+    // ------ Signal handlers ------
     // File actions
     void on_action_new();
     void on_action_open();
@@ -152,11 +154,8 @@ protected:
     void on_action_cursor_select();
     // Toggle Stabillity Detection
     void on_action_experiment();
-    // Increase the zoom level and decrease the view angle (z ratio)
     void on_action_zoom_in();
-    // Decrease the zoom level and increase the view angle (z ratio)
     void on_action_zoom_out();
-    // Reset zoom values and the zoom label
     void on_action_reset_zoom();
     void on_button_increase_size_clicked();
     void on_button_decrease_size_clicked();
@@ -167,10 +166,10 @@ protected:
     void on_button_start_clicked();
     void on_button_step_clicked();
     void on_button_reset_clicked();
+    void on_button_slower_clicked();
+    void on_button_faster_clicked();
     void on_action_random();
 
-    void on_checkbutton_show_toolbar_checked();
-    void on_checkbutton_show_statusbar_checked();
     void on_checkbutton_dark_checked();
     void on_checkbutton_grid_checked();
     void on_checkbutton_fade_checked();
@@ -197,6 +196,7 @@ protected:
     bool on_button_release_event(GdkEventButton * event);
     // Called when one moves and holds the mouse over the drawing area
     bool on_motion_notify_event(GdkEventMotion * event);
+    bool on_scroll_event(GdkEventScroll * event);
 
     void on_combo_light_changed();
     void on_combo_dark_changed();
@@ -236,11 +236,11 @@ protected:
     Gtk::MenuItem* zoominMi;
     Gtk::MenuItem* zoomoutMi;
     Gtk::MenuItem* resetzoomMi;
-    Gtk::CheckMenuItem* showToolbarMi;
-    Gtk::CheckMenuItem* showStatusBarMi;
+    Gtk::CheckMenuItem showToolbarMi;
+    Gtk::CheckMenuItem showStatusBarMi;
     Gtk::CheckMenuItem* showgridMi;
     Gtk::CheckMenuItem* fadeMi;
-    Gtk::CheckMenuItem* darkmode;
+    Gtk::CheckMenuItem* darkMi;
     Gtk::MenuItem colorschemeMi;
     Gtk::CheckMenuItem* experimentMi;
     Gtk::MenuItem simsizeMi;
@@ -256,19 +256,26 @@ protected:
     Gtk::Toolbar* m_ToolBar;
     Gtk::ToolButton* toolbutton_new;
     Gtk::ToolButton* toolbutton_save;
+    Gtk::ToolButton* toolbutton_cut;
+    Gtk::ToolButton* toolbutton_copy;
+    Gtk::ToolButton* toolbutton_paste;
     Gtk::ToolButton* toolbutton_zoomin;
     Gtk::ToolButton* toolbutton_zoomout;
     Gtk::ToolButton* toolbutton_resetzoom;
+    Gtk::ToggleToolButton* toggletoolbutton_experiment;
 
     Gtk::Separator m_Separator;
     Gtk::Separator m_Sep;
 
     Gtk::Box m_SuperBox;
-    Gtk::Box m_Box, m_Box_General, m_ButtonBox;
+    Gtk::Box m_Box, m_Box_General, m_ButtonBox, m_RefreshBox;
+    Gtk::ButtonBox m_RefreshButtonBox;
     Gtk::Frame m_Frame_Speed;
-    Gtk::Button m_Button_Start, m_Button_Step, m_Button_Reset, m_Button_Clear, m_Button_Random;
-    Gtk::Scale m_Scale;
-    Gtk::Label m_Label_Info, m_Label_Test, m_Label_Theme, m_LabelSize, m_LabelZoom, m_LabelCoordinates, m_Label_Population;
+    Gtk::Button m_Button_Start, m_Button_Step, m_Button_Reset,
+                m_Button_Slower, m_Button_Faster;
+    // Gtk::Scale m_Scale;
+    Gtk::Label m_Label_Info, m_Label_Test, m_LabelSize, m_LabelZoom,
+               m_LabelCoordinates, m_Label_Population, m_Label_Refresh;
 
     Gtk::Statusbar m_StatusBar;
 
@@ -283,13 +290,20 @@ protected:
     Glib::RefPtr<Gtk::Builder> m_refBuilder;
 
     // -----Attributes-----
+    enum ButtonType { NONE, LEFT, RIGHT, MIDDLE };
+
     bool timer_added;
     bool disconnect;
     bool experiment;
+
     int timeout_value;
+
+    unsigned zoom;
+    unsigned default_zoom;
     double frame_surface;
     std::string filename;
     std::string x, y;
+
     ButtonType button_type;
 };
 

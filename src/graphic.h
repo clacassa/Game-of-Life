@@ -1,19 +1,21 @@
 /*
- *  graphic.h -- GoL Lab -- GUI with various options and view controls
- *  Copyright (C) 2022 Cyprien Lacassagne
-
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
-
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
-
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * graphic.h
+ * This file is part of GoL Lab, a simulator of Conway's game of life.
+ *
+ * Copyright (C) 2022 - Cyprien Lacassagne
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef GRAPHIC_H_INCLUDED
@@ -32,7 +34,7 @@ struct Scheme {
     Color bg;
 };
 
-struct Pos {
+struct Coordinates {
     unsigned x;
     unsigned y;
 };
@@ -62,14 +64,13 @@ constexpr Scheme Asphalt({gray, black});
 constexpr Scheme Albaster({black, gray1});
 constexpr Scheme DeepBlue({gray2, night_blue});
 
-
 void graphic_draw_world(double xMax, double yMax, unsigned ref_color, bool show_grid, unsigned delta);
 void graphic_draw_cell(unsigned x, unsigned y, unsigned ref_color, float fg_r_offset = 0.0, 
                                             float fg_g_offset = 0.0, float fg_b_offset = 0.0);
 void graphic_fade_dead(unsigned x, unsigned y, const Color gray);
-void graphic_ghost_pattern(unsigned x, unsigned y, std::vector<Pos> cells, unsigned ref_color);
+void graphic_ghost_pattern(unsigned x, unsigned y, std::vector<Coordinates> cells, unsigned ref_color);
 void graphic_draw_select_rec(unsigned x_0, unsigned y_0, unsigned x, unsigned y, unsigned ref_color);
-void graphic_highlight_selected_cells(std::vector<Pos> selected_cells, unsigned ref_color);
+void graphic_highlight_selected_cells(std::vector<Coordinates> selected_cells, unsigned ref_color);
 void graphic_change_light_color_scheme(unsigned id);
 void graphic_change_dark_color_scheme(unsigned id);
 

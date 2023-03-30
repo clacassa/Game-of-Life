@@ -1,20 +1,23 @@
 /*
- *  simulation.cc -- GoL Lab -- GUI with various options and view controls
- *  Copyright (C) 2022 Cyprien Lacassagne
-
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
-
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
-
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * simulation.cc
+ * This file is part of GoL Lab, a simulator of Conway's game of life.
+ *
+ * Copyright (C) 2022 - Cyprien Lacassagne
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -24,8 +27,25 @@
 #include "config.h"
 
 namespace {
-    enum reading_State { WORLD_SIZE, NB_CELLS, COORDINATES, END, OK };
-    enum Error_reading { READING_OPENING, READING_WORLDSIZE, READING_END, BAD_EXTENSION };
+    enum reading_State { 
+        WORLD_SIZE,
+        NB_CELLS,
+        COORDINATES,
+        ERROR,
+        DONE
+    };
+    enum ReadingError { 
+        INEXISTANT_FILE = 1,
+        INVALID_FORMAT,
+        INVALID_WORLDSIZE,
+        INVALID_COORDINATE
+    };
+
+    struct ErrorInfo {
+        ReadingError error_type;
+        unsigned line_number;
+        std::string line;
+    };
 
     struct RLEWidthHeight {
         unsigned width;
@@ -33,11 +53,12 @@ namespace {
     };
 
     typedef std::vector<std::vector<bool>> Grid;
+    typedef std::vector<Coordinates> LineBuffer;
 
-    void line_decoding(std::string line);
-    void error(Error_reading code);
+    ReadingError line_decoding(std::string line);
     RLEWidthHeight get_rle_width_height(std::string rle_header);
-    void decode_rle_body(unsigned width, unsigned height, std::string rle_body, std::vector<Pos>& cells);
+    void decode_rle_body(unsigned width, unsigned height, std::string rle_body,
+                         std::vector<Coordinates>& cells);
 
     void fade_update();
     unsigned neighbours(unsigned x, unsigned y);
@@ -45,27 +66,39 @@ namespace {
 
     void print_selection(unsigned i_min, unsigned i_max, unsigned y_min, unsigned y_max);
 
-    Grid grid(Conf::world_y_max, std::vector<bool>(Conf::world_size));
-    Grid updated_grid(Conf::world_y_max, std::vector<bool>(Conf::world_size));
-    std::vector<Pos> dead, dead2, dead3, dead4;
+    Grid grid(Conf::get_y_max(), std::vector<bool>(Conf::get_x_max()));
+    Grid updated_grid(Conf::get_y_max(), std::vector<bool>(Conf::get_x_max()));
+#ifdef LIVE_ARRAY_OPTIMIZATION
+    LineBuffer live_cells_buffer;
+#endif
+    std::vector<Coordinates> dead, dead2, dead3, dead4;
+
+    reading_State state(WORLD_SIZE);
+    ErrorInfo file_error = {INEXISTANT_FILE, 0, ""};
+
+    std::string current_filename;
 
     unsigned nb_alive(0);
+
+    int nb_dead(0);
     int nb_born(0);
     int past_alive(0);
     int past_2_alive(0);
     int past_3_alive(0);
     int past_4_alive(0);
     int past_5_alive(0);
-    int nb_dead(0);
     bool stable(false);
     bool past_stable(false);
+
     bool fade_effect_enabled(false);
-    int state(WORLD_SIZE);
-    unsigned i(0), total(0);
-    unsigned x(0), y(0), w_size(0);
-    int error_id(0);
-    bool success(true);
-}
+
+    unsigned i(0);
+    unsigned total(0);
+    unsigned x(0);
+    unsigned y(0);
+    unsigned x_max(0);
+    unsigned y_max(0);
+} /* unnamed namespace */
 
 std::string filename_from_filepath(std::string filepath) {
     if (filepath.find_last_of('\\') != std::string::npos) {
@@ -79,14 +112,14 @@ std::string filename_from_filepath(std::string filepath) {
     return filepath;
 }
 
-bool read_file(std::string filename) {
+int read_file(std::string filename) {
+    current_filename = filename;
     state = WORLD_SIZE;
     i = 0;
     total = 0;
-    error_id = 0;
     x = 0;
     y = 0;
-    w_size = 0;
+    x_max = 0;
 
     std::string line;
     std::ifstream file(filename);
@@ -94,74 +127,82 @@ bool read_file(std::string filename) {
         // The file must be a text file
         unsigned pos(filename.find_last_of("."));
         std::string extension(filename.substr(pos + 1));
-        if (extension != "txt") {
-            error(BAD_EXTENSION);
-            return false;
-        }
-        // Read the file line by line, ignoring those starting with '#'
+        if (extension != "txt")
+            return INVALID_FORMAT;
+        // Read the file line by line, ignoring the ones starting with '#'
         while (getline(file >> std::ws, line)) {
-            if (line[0] == '#') continue;
-            line_decoding(line);
+            ++file_error.line_number;
+            if (line[0] == '#' || line.empty())
+                continue;
+            file_error.line = line;
+            file_error.error_type = line_decoding(line);
+            if (state == ERROR)
+                return file_error.error_type;
         }
-        line_decoding("last_line");
-        if (success) {
-            error_id = 0;
-            return true;
-        }else {
-            success = true;
-            return false;
-        }
-    }else {
-        error(READING_OPENING);
-        return false;
+        return 0;
     }
+    return INEXISTANT_FILE;
 }
-
-
 
 void save_file(std::string filename) {
     std::ofstream saved_file;
     unsigned nb_born__(0);
     
+#ifdef LIVE_ARRAY_OPTIMIZATION
+    nb_born__ = live_cells_buffer.size();
+#else
     for (auto e : updated_grid) {
         for (auto f : e) {
-            if (f) ++nb_born__;
+            if (f)
+                ++nb_born__;
         }
     }
+#endif
 
     std::string name(filename_from_filepath(filename));
     saved_file.open(filename);
 
-    saved_file << "# ========== Configuration File for Gol Lab";
-    saved_file << " ========== \n#\n# " << name << "\n";
-    saved_file << "# Last edited on "<< __DATE__ << "\n#\n\n";
-    saved_file << "# world size:\n";
-    saved_file << Conf::world_size << "\n";
-    saved_file << "# alive cells:\n";
-    saved_file << nb_born__ << "\n";
-    saved_file << "# coordinates:\n";
+    saved_file << "# ========== Configuration File for Gol Lab ==========\n"
+                  "#\n"
+                  "# File name: " << name << "\n"
+                  "# Last edited: "<< __DATE__ << "\n"
+                  "# Format: pseudo Life 1.06\n"
+                  "#\n"
+                  "# ====================================================\n\n"
+                  "# world dimensions (width height)\n";
+    saved_file << Conf::get_x_max() << " " << Conf::get_y_max() << "\n"
+                  "# number of live cells\n";
+    saved_file << nb_born__ << "\n"
+                  "# live cells coordinates\n";
+
+#ifdef LIVE_ARRAY_OPTIMIZATION
+    for (auto cell : live_cells_buffer) {
+        saved_file << cell.x << " " << cell.y << "\n";
+    }
+#else
     for (unsigned i(0); i < updated_grid.size(); ++i) {
         for (unsigned j(0); j < updated_grid[i].size(); ++j) {
             if (updated_grid[i][j]) {
-                saved_file << j << " " << Conf::world_y_max-1-i << "\n";
+                saved_file << j << " " << Conf::get_y_max()-1-i << "\n";
             }
         }
     }
+#endif
+
     saved_file.close();
 }
 
-
-
-std::vector<Pos> get_rle_data(std::string filename) {
-    std::vector<Pos> cells;
+std::vector<Coordinates> get_rle_data(std::string filename) {
+    std::vector<Coordinates> cells;
     std::string line;
-    std::ifstream file(PATTERNS_DIR + filename);
-    std::cout << PATTERNS_DIR + filename << "\n";
+    std::ifstream file(Conf::working_dir() + PATTERNS_DIR + filename);
+    std::cout << Conf::working_dir() + PATTERNS_DIR + filename << "\n";
     
     if (!file.fail()) {
         std::cout << "OK\n";
 
-        unsigned width(0), height(0);
+        unsigned width(0);
+        unsigned height(0);
         std::string rle_string, rle_body;
         std::ostringstream ss;
         ss << file.rdbuf();
@@ -176,7 +217,8 @@ std::vector<Pos> get_rle_data(std::string filename) {
         }
 
         while (getline(file, line)) {
-            if (line[0] == '#') continue;    
+            if (line[0] == '#')
+                continue;    
             width = get_rle_width_height(line).width;
             height = get_rle_width_height(line).height;
             break;
@@ -186,27 +228,23 @@ std::vector<Pos> get_rle_data(std::string filename) {
     return cells;
 }
 
-std::vector<Pos> get_live_cells_in_area(unsigned x_min, unsigned x_max,
-                                        unsigned y_min, unsigned y_max) {
-    unsigned i_min(Conf::world_y_max - 1 - y_max);
-    unsigned i_max(Conf::world_y_max- 1 - y_min);
+std::vector<Coordinates> get_live_cells_in_area(unsigned x_min, unsigned x_max,
+                                                unsigned y_min, unsigned y_max) {
+    unsigned i_min(Conf::get_y_max() - 1 - y_max);
+    unsigned i_max(Conf::get_y_max()- 1 - y_min);
     unsigned j_min(x_min);
     unsigned j_max(x_max);
 
     // print_selection(i_min, i_max, j_min, j_max);
 
-    std::vector<Pos> live_cells_in_area;
+    std::vector<Coordinates> live_cells_in_area;
     for (unsigned i(i_min); i <= i_max; ++i) {
         for (unsigned j(j_min); j <= j_max; ++j) {
             if (updated_grid[i][j])
-                live_cells_in_area.push_back({j, Conf::world_y_max - 1 - i});
+                live_cells_in_area.push_back({j, Conf::get_y_max() - 1 - i});
         }
     }
     return live_cells_in_area;
-}
-
-unsigned get_error_id() {
-    return error_id;
 }
 
 unsigned get_alive() {
@@ -214,65 +252,85 @@ unsigned get_alive() {
 }
 
 void adjust_bool_grid() {
-    if (Conf::world_size < grid.size()) {
+    if (Conf::get_y_max() < grid.size()) {
         unsigned len(grid.size());
-        for (unsigned i(Conf::world_y_max); i < len; ++i) {
+        for (unsigned i(Conf::get_y_max()); i < len; ++i) {
             grid.pop_back();
             updated_grid.pop_back();
         }
         for (unsigned i(0); i < grid.size(); ++i) {
             unsigned len(grid[i].size());
-            for (unsigned j(Conf::world_size); j < len; ++j) {
+            for (unsigned j(Conf::get_x_max()); j < len; ++j) {
                 grid[i].pop_back();
                 updated_grid[i].pop_back();
             }
         }
     }else {
         unsigned len(grid.size());
-        for (unsigned i(grid.size()); i < Conf::world_y_max; ++i) {
-            grid.push_back(std::vector<bool>(Conf::world_size, false));
-            updated_grid.push_back(std::vector<bool>(Conf::world_size, false));
+        for (unsigned i(grid.size()); i < Conf::get_y_max(); ++i) {
+            grid.push_back(std::vector<bool>(Conf::get_x_max(), false));
+            updated_grid.push_back(std::vector<bool>(Conf::get_x_max(), false));
         }
+        unsigned x_len(grid[0].size());
         for (unsigned i(0); i < len; ++i) {
-            for (unsigned j(len); j < Conf::world_size; ++j) {
+            for (unsigned j(x_len); j < Conf::get_x_max(); ++j) {
                 grid[i].push_back(false);
                 updated_grid[i].push_back(false);
             }
         }
+    }    
+#ifdef LIVE_ARRAY_OPTIMIZATION
+    live_cells_buffer.clear();
+    for (unsigned i(0); i < grid.size(); ++i) {
+        for (unsigned j(0); j < grid[i].size(); ++j) {
+            if (updated_grid[i][j])
+                live_cells_buffer.push_back({j, Conf::get_y_max()-1-i});
+        }
     }
+#endif
 }
 
 void new_birth(unsigned x, unsigned y) {
-    if (!updated_grid[Conf::world_y_max - 1 - y][x]) {
-        updated_grid[Conf::world_y_max - 1 - y][x] = true;
+    if (!updated_grid[Conf::get_y_max() - 1 - y][x]) {
+        updated_grid[Conf::get_y_max() - 1 - y][x] = true;
+#ifdef LIVE_ARRAY_OPTIMIZATION
+        live_cells_buffer.push_back({x, y});
+#endif
         ++nb_born;
-        if (!grid[Conf::world_y_max-1-y][x]) {
+        if (!grid[Conf::get_y_max()-1-y][x]) {
             ++nb_alive;
         }
     }
-    
 }
 
 void new_death(unsigned x, unsigned y) {
-    if (updated_grid[Conf::world_y_max - 1 - y][x]) {
-        updated_grid[Conf::world_y_max - 1 - y][x] = false;
+    if (updated_grid[Conf::get_y_max() - 1 - y][x]) {
+        updated_grid[Conf::get_y_max() - 1 - y][x] = false;
         --nb_alive;
     }
+#ifdef LIVE_ARRAY_OPTIMIZATION
+    for (size_t i(0); i < live_cells_buffer.size(); ++i) {
+        if (live_cells_buffer[i].x == x && live_cells_buffer[i].y == y) {
+            live_cells_buffer.erase(live_cells_buffer.begin() + i);
+            break;
+        }
+    }
+#endif
 }
 
-void new_pattern(unsigned x, unsigned y, std::vector<Pos> pattern) {
+void new_pattern(unsigned x, unsigned y, std::vector<Coordinates> pattern) {
     for (auto& e : pattern) {
-        if (x + e.x >= 0 && x + e.x < Conf::world_size - 1 &&
-            y + e.y >= 0 && y + e.y < Conf::world_y_max - 1) {
+        if (x + e.x >= 0 && x + e.x <= Conf::get_x_max() - 1 &&
+            y + e.y >= 0 && y + e.y <= Conf::get_y_max() - 1) {
             new_birth(x + e.x, y + e.y);
         }
     }
 }
 
-void del_pattern(unsigned x, unsigned y, std::vector<Pos> pattern) {
+void del_pattern(unsigned x, unsigned y, std::vector<Coordinates> pattern) {
     for (auto& e : pattern) {
-        if (e.x >= 0 && e.x < Conf::world_size - 1 &&
-            e.y >= 0 && e.y < Conf::world_y_max - 1) {
+        if (e.x >= 0 && e.x <= Conf::get_x_max() - 1 &&
+            e.y >= 0 && e.y <= Conf::get_y_max() - 1) {
             new_death(x + e.x, y + e.y);
         }
     }
@@ -290,9 +348,46 @@ bool update(Mode mode) {
     stable = false;
 
     // Update vectors for fade effect
-    if (fade_effect_enabled) fade_update();
+    if (fade_effect_enabled)
+        fade_update();   
 
-    // Update all cells
+#ifdef LIVE_ARRAY_OPTIMIZATION
+    LineBuffer read_buffer(live_cells_buffer);
+    live_cells_buffer.clear();
+
+    for (size_t i(0); i < read_buffer.size(); ++i) {
+        Coordinates pos = read_buffer[i];
+        if (!updated_grid[Conf::get_y_max()-1-pos.y][pos.x])
+            read_buffer.erase(read_buffer.begin()+i);
+    }
+
+    // This heavy operation remains to be optimized
+    for (unsigned i(0); i < grid.size(); ++i) {
+        for (unsigned j(0); j < grid[i].size(); ++j) {
+            grid[i][j] = updated_grid[i][j];
+        }
+    }
+
+    for (auto& cell : read_buffer) {
+        updated_grid[Conf::get_y_max()-1-cell.y][cell.x] = false;
+        for (int x_offset(-1); x_offset <= 1; ++x_offset) {
+            for (int y_offset(-1); y_offset <= 1; ++y_offset) {
+
+                int x_neighb(cell.x+x_offset);
+                int y_neighb(cell.y+y_offset);
+
+                if (x_neighb >= 0 && x_neighb < Conf::get_x_max() &&
+                    y_neighb >= 0 && y_neighb < Conf::get_y_max()) {
+                    if (grid[Conf::get_y_max()-1-y_neighb][x_neighb]
+                        && (x_offset != 0 || y_offset != 0))
+                        continue;
+                    birth_test(x_neighb, y_neighb);
+                }
+            }
+        }
+    }
+    nb_alive = live_cells_buffer.size();
+#else
     for (unsigned i(0); i < grid.size(); ++i) {
         for (unsigned j(0); j < grid[i].size(); ++j) {
             grid[i][j] = updated_grid[i][j];
@@ -301,23 +396,21 @@ bool update(Mode mode) {
     for (unsigned i(0); i < updated_grid.size(); ++i) {
         for (unsigned j(0); j < updated_grid[i].size(); ++j) {
             updated_grid[i][j] = false;
-            birth_test(j, Conf::world_y_max - 1 - i);
+            birth_test(j, Conf::get_y_max() - 1 - i);
         }
     }
+#endif // LIVE_ARRAY_OPTIMIZATION
+
     // 5-perdiodic oscillations detection
     if (mode == EXPERIMENTAL) {
-        if (nb_born == past_alive && past_alive == past_2_alive && past_2_alive == past_3_alive) {
+        if (nb_born == past_alive && past_alive == past_2_alive && past_2_alive == past_3_alive)
             stable = true;
-        }
-        if (nb_born == past_2_alive && past_alive == past_3_alive && past_2_alive == past_4_alive) {
+        if (nb_born == past_2_alive && past_alive == past_3_alive && past_2_alive == past_4_alive)
             stable = true;
-        }
-        if (nb_born == past_3_alive && past_alive == past_4_alive && past_2_alive == past_5_alive) {
+        if (nb_born == past_3_alive && past_alive == past_4_alive && past_2_alive == past_5_alive)
             stable = true;
-        }
-        if (stable && past_stable) {
+        if (stable && past_stable)
             return true;
-        }
     }
     return false;
 }
@@ -353,16 +446,30 @@ void draw_cells(unsigned color_theme) {
             } 
         }
     }
+#ifdef LIVE_ARRAY_OPTIMIZATION
+    for (auto cell : live_cells_buffer) {
+        graphic_draw_cell(cell.x, cell.y, color_theme);
+    }
+#else
     for (unsigned i(0); i < updated_grid.size(); ++i) {
         for (unsigned j(0); j < updated_grid[i].size(); ++j) {
             if (updated_grid[i][j]) {
-                graphic_draw_cell(j, Conf::world_y_max - i -1, color_theme);
+                graphic_draw_cell(j, Conf::get_y_max() - i -1, color_theme);
             }
         }
     }
+#endif
 }
 
 void display() {
+    std::cout << "\n------GRID------\n";
+    for (unsigned i(0); i < grid.size(); ++i) {
+        std::cout << "\n";
+        for (unsigned j(0); j < grid[i].size(); ++j) {
+            std::cout << grid[i][j];
+        }
+    }
+    std::cout << "\n------UPDATED GRID------\n";
     for (unsigned i(0); i < grid.size(); ++i) {
         std::cout << "\n";
         for (unsigned j(0); j < grid[i].size(); ++j) {
@@ -378,6 +485,9 @@ void init() {
             updated_grid[i][j] = false;
         }
     }
+#ifdef LIVE_ARRAY_OPTIMIZATION
+    live_cells_buffer.clear();
+#endif
     dead.clear();
     dead2.clear();
     dead3.clear();
@@ -387,113 +497,95 @@ void init() {
 }
 
 void toggle_fade_effect() {
- if (fade_effect_enabled) {
-    fade_effect_enabled = false;
-    dead.clear();
-    dead2.clear();
-    dead3.clear();
-    dead4.clear();
- }else {
-    fade_effect_enabled = true;
- }
+    if (fade_effect_enabled) {
+        fade_effect_enabled = false;
+        dead.clear();
+        dead2.clear();
+        dead3.clear();
+        dead4.clear();
+    }else
+        fade_effect_enabled = true;
+}
+
+std::string message::file_does_not_exist() {
+    return current_filename + " : no such file found on disk.\n"
+           "Please check the spelling and the location of the file.";
+}
+
+std::string message::invalid_file_format() {
+    return "The file " + current_filename + " is not in plain text format.";
+}
+
+std::string message::invalid_world_dimensions() {
+    return "File: " + current_filename + "\n"
+           "Line " + std::to_string(file_error.line_number) + ":\t" + file_error.line + "\n"
+           "The simulation could not be configured because of one of the followings:\n"
+           "\t- The file is empty\n"
+           "\t- The dimensions are out of range : [" + std::to_string(world_size_min) 
+           + "," + std::to_string(world_size_max) + "]\n" 
+           "\t- The aspect ratio is different than 2";
+}
+
+std::string message::invalid_cell_coordinate() {
+    return "File: " + current_filename + "\n"
+           "Line " + std::to_string(file_error.line_number) + " :\t" + file_error.line +"\n"
+           "The simulation could not be configured because one coordinate is out of range: "
+           "[0," + std::to_string(x_max) + "]x[0," + std::to_string(y_max) + "].";
 }
 
 namespace {
-    void line_decoding(std::string line) {
+    ReadingError line_decoding(std::string line) {
         std::istringstream data(line);
         switch(state) {
-        case WORLD_SIZE:
-            if (!(data >> w_size)) {
-                state = END;
-                break;
-            }
-            else ++i;
-            if (w_size > world_size_max || w_size < world_size_min) {
-                state = END;
-                break;
-            }else {
-                Conf::set_world_size(w_size);
-                if (w_size < grid.size()) {
-                    unsigned len(grid.size());
-                    for (unsigned i(Conf::world_y_max); i < len; ++i) {
-                        grid.pop_back();
-                        updated_grid.pop_back();
-                    }
-                    for (unsigned i(0); i < grid.size(); ++i) {
-                        unsigned len(grid[i].size());
-                        for (unsigned j(Conf::world_size); j < len; ++j) {
-                            grid[i].pop_back();
-                            updated_grid[i].pop_back();
-                        }
-                    }
-                }else {
-                    unsigned len(grid.size());
-                    for (unsigned i(grid.size()); i < Conf::world_y_max; ++i) {
-                        grid.push_back(std::vector<bool>(w_size, false));
-                        updated_grid.push_back(std::vector<bool>(w_size, false));
-                    }
-                    for (unsigned i(0); i < len; ++i) {
-                        for (unsigned j(len); j < w_size; ++j) {
-                            grid[i].push_back(false);
-                            updated_grid[i].push_back(false);
-                        }
-                    }
+            case WORLD_SIZE: {
+                if (!(data >> x_max)) {
+                    state = ERROR;
+                    return INVALID_WORLDSIZE;
                 }
-                state = NB_CELLS;
-            }
-            if (i == 1) state = NB_CELLS;
-            break;
-        case NB_CELLS:
-            data >> total;
-            if (total < 0 || total > world_size_max*world_size_max) {
-                state = END;
-            }
-            else state = COORDINATES;
-            break;
-        case COORDINATES:
-            data >> x >> y;
-            if (x < 0 || y < 0 || x >= w_size || y >= w_size) {
-                error(READING_END);
-            }
-            else new_birth(x, y);
-            ++i;
-            if (i == total + 1) {
-                state = OK;
-            }else state = COORDINATES;
-            break;
-        case END:
-            error(READING_END);
-            break;
-        case OK:
-            break;
-        default:
-            break;
-        }
-    }
-
-    void error(Error_reading code) {
-        switch(code) {
-            case READING_OPENING:
-                error_id = 1;
-                success = false;
+                data >> y_max;
+                ++i;
+                if (x_max > world_size_max || x_max < world_size_min ||
+                    x_max != 2*y_max) {
+                    state = ERROR;
+                    return INVALID_WORLDSIZE;
+                }else {
+                    Conf::set_world_size(x_max);
+                    adjust_bool_grid();
+                    state = NB_CELLS;
+                }
+                if (i == 1)
+                    state = NB_CELLS;
                 break;
-            case READING_WORLDSIZE:
-                error_id = 2;
-                success = false;
+            }
+            case NB_CELLS:
+                data >> total;
+                if (total < 0 || total > world_size_max*world_size_max) {
+                    state = ERROR;
+                    return INVALID_WORLDSIZE;
+                }else
+                    state = COORDINATES;
                 break;
-            case READING_END: 
-                error_id = 3;
-                success = false;
-                init();
+            case COORDINATES:
+                data >> x >> y;
+                if (x < 0 || y < 0 || x >= x_max || y >= y_max) {
+                    state = ERROR;
+                    return INVALID_COORDINATE;
+                }
+                else
+                    new_birth(x, y);
+                ++i;
+                if (i == total + 1)
+                    state = DONE;
+                else
+                    state = COORDINATES;
                 break;
-            case BAD_EXTENSION:
-                error_id = 4;
-                success = false;
-                init();
+            case ERROR:
+                break;
+            case DONE:
                 break;
             default:
-                error_id = 5;
-                success = false;
+                return INEXISTANT_FILE;
+                break;
         }
     }
 
@@ -507,7 +599,8 @@ namespace {
         return {width, height};
     }
 
-    void decode_rle_body(unsigned x, unsigned y, std::string rle_body, std::vector<Pos>& cells) {
+    void decode_rle_body(unsigned x, unsigned y, std::string rle_body,
+                         std::vector<Coordinates>& cells) {
         unsigned row(y);
         unsigned col(x);
         unsigned cnt(0);
@@ -572,18 +665,17 @@ namespace {
     }
 
     void birth_test(unsigned x, unsigned y) {
-        if (!grid[Conf::world_y_max - 1 - y][x]) {
-            if (neighbours(x, y) == 3) {
+        unsigned n(neighbours(x, y));
+        if (!grid[Conf::get_y_max() - 1 - y][x]) {
+            if (n == 3)
                 new_birth(x, y);
-            }
         }else {
-            if (neighbours(x, y) == 2 or neighbours(x, y) == 3) {
+            if (n == 2 || n == 3) {
                 new_birth(x, y);
                 --nb_born;
             }else {
-                if (fade_effect_enabled) {
+                if (fade_effect_enabled)
                     dead.push_back({x, y});
-                }
                 ++nb_dead;
                 --nb_alive;
             }
@@ -593,71 +685,21 @@ namespace {
     unsigned neighbours(unsigned x, unsigned y) {
         unsigned n(0);
 
-        if (x == 0 and y == 0) {
-            if (grid[Conf::world_y_max-2][y]) ++n;
-            if (grid[Conf::world_y_max-2][y+1]) ++n;
-            if (grid[Conf::world_y_max-1][y+1]) ++n;
-            return n;
-        }
-        if (x == Conf::world_size-1 and y == 0) {
-            if (grid[Conf::world_y_max-2][Conf::world_size-1]) ++n;
-            if (grid[Conf::world_y_max-2][Conf::world_size-2]) ++n;
-            if (grid[Conf::world_y_max-1][Conf::world_size-2]) ++n;
-            return n;
-        }
-        if (x == Conf::world_size-1 and y == Conf::world_y_max-1) {
-            if (grid[0][Conf::world_size-2]) ++n;
-            if (grid[1][Conf::world_size-2]) ++n;
-            if (grid[1][Conf::world_size-1]) ++n;
-            return n;
-        }
-        if (x == 0 and y == Conf::world_y_max-1) {
-            if (grid[1][0]) ++n;
-            if (grid[1][1]) ++n;
-            if (grid[0][1]) ++n;
-            return n;
-        }
-        if (x == 0 and y != 0 and y != Conf::world_y_max-1) {
-            if (grid[Conf::world_y_max-y][x]) ++n;
-            if (grid[Conf::world_y_max-y-2][x]) ++n;
-            if (grid[Conf::world_y_max-y][x+1]) ++n;
-            if (grid[Conf::world_y_max-y-1][x+1]) ++n;
-            if (grid[Conf::world_y_max-y-2][x+1]) ++n;
-            return n;
-        }
-        if (y == 0 and x != 0 and x != Conf::world_size-1) {
-            if (grid[Conf::world_y_max-1][x-1]) ++n;
-            if (grid[Conf::world_y_max-1][x+1]) ++n;
-            if (grid[Conf::world_y_max-2][x-1]) ++n;
-            if (grid[Conf::world_y_max-2][x]) ++n;
-            if (grid[Conf::world_y_max-2][x+1]) ++n;
-            return n;
-        }
-        if (x == Conf::world_size-1 and y != 0 and y != Conf::world_y_max-1) {
-            if (grid[Conf::world_y_max-y][x]) ++n;
-            if (grid[Conf::world_y_max-y-2][x]) ++n;
-            if (grid[Conf::world_y_max-y][x-1]) ++n;
-            if (grid[Conf::world_y_max-y-1][x-1]) ++n;
-            if (grid[Conf::world_y_max-y-2][x-1]) ++n;
-            return n;
-        }
-        if (y == Conf::world_y_max-1 and x != 0 and x != Conf::world_size-1) {
-            if (grid[0][x-1]) ++n;
-            if (grid[0][x+1]) ++n;
-            if (grid[1][x-1]) ++n;
-            if (grid[1][x]) ++n;
-            if (grid[1][x+1]) ++n;
-            return n;
-        }
-        if (grid[Conf::world_y_max - y - 2][x - 1]) ++n;
-        if (grid[Conf::world_y_max - y - 2][x]) ++n;
-        if (grid[Conf::world_y_max - y - 2][x + 1]) ++n;
-        if (grid[Conf::world_y_max - 1 - y][x - 1]) ++n;
-        if (grid[Conf::world_y_max - 1 - y][x + 1]) ++n;
-        if (grid[Conf::world_y_max - y][x - 1]) ++n;
-        if (grid[Conf::world_y_max - y][x]) ++n;
-        if (grid[Conf::world_y_max - y][x + 1]) ++n;
+        for (int x_offset(-1); x_offset <= 1; ++x_offset) {
+            for (int y_offset(-1); y_offset <= 1; ++y_offset) {
 
+                if (x_offset == 0 && y_offset == 0)
+                    continue;
+
+                int x_neighb(x+x_offset);
+                int y_neighb(y+y_offset);
+
+                if (x_neighb >= 0 && x_neighb < Conf::get_x_max() &&
+                    y_neighb >= 0 && y_neighb < Conf::get_y_max())
+                    if (grid[Conf::get_y_max()-1-y_neighb][x_neighb])
+                        ++n;
+            }
+        }
         return n;
     }
 
@@ -717,4 +759,4 @@ namespace {
             std::cout << "|\n\n";
         }
     }
-}
+} /* unnamed namespace */
