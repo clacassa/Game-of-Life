@@ -253,11 +253,11 @@ bool MyArea::on_leave_notify_event(GdkEventCrossing * crossing_event) {
 }
 
 /**  
- *  ===========================================
+ *  =============================================================
  *  SimulationWindow constructor: TopLevel window initialization.
  *  Manages all signal handlers and events.
- *  ===========================================
-*/
+ *  =============================================================
+ */
 SimulationWindow::SimulationWindow(Glib::RefPtr<Gtk::Application> app,
                                    std::string __filename,
                                    int result)
@@ -605,7 +605,7 @@ void SimulationWindow::parse_file_error(int parsing_result) {
 }
 
 void SimulationWindow::error_dialog_open(Glib::ustring error_message, Glib::ustring details) {
-    Gtk::MessageDialog error_dialog(error_message, false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+    Gtk::MessageDialog error_dialog(error_message, false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK, true);
 
     error_dialog.set_secondary_text(details, true);
     error_dialog.set_position(Gtk::WIN_POS_CENTER);
@@ -655,7 +655,8 @@ void SimulationWindow::on_action_experiment() {
         experiment = true;
         m_Label_Test.set_label("Stability detection=<span foreground='blue'>ON</span>");
         experimentMi->set_state_flags(Gtk::STATE_FLAG_CHECKED);
-        toggletoolbutton_experiment->set_state_flags(Gtk::STATE_FLAG_ACTIVE);
+        // toggletoolbutton_experiment->set_state_flags(Gtk::STATE_FLAG_ACTIVE);
+        toggletoolbutton_experiment->set_state_flags(Gtk::STATE_FLAG_CHECKED);
     }
 }
 
@@ -1894,16 +1895,17 @@ void SimulationWindow::create_StatusBar() {
     m_Label_Test.set_use_markup(true);
 
     // Create StatusBar
-    m_StatusBar.pack_end(m_LabelSize);
-    m_StatusBar.pack_end(m_LabelZoom);
-    m_StatusBar.pack_end(m_LabelCoordinates);
-    m_StatusBar.pack_end(m_Label_Info);
-    m_StatusBar.pack_end(m_Label_Population);
-    m_StatusBar.pack_end(m_Label_Test);
+    m_StatusBar.pack_end(m_LabelSize, false, false);
+    m_StatusBar.pack_end(m_LabelZoom, false, false);
+    m_StatusBar.pack_end(m_LabelCoordinates, false, false);
+    m_StatusBar.pack_end(m_Label_Info, false, false);
+    m_StatusBar.pack_end(m_Label_Population, false, false);
+    m_StatusBar.pack_end(m_Label_Test, false, false);
     m_StatusBar.set_valign(Gtk::ALIGN_END);
     m_StatusBar.set_vexpand(false);
-    m_StatusBar.set_halign(Gtk::ALIGN_END);
     m_StatusBar.set_spacing(100);
+    m_StatusBar.push("This is a message", 0);
+    m_StatusBar.push("Another one", 1);
 }
 
 void SimulationWindow::create_ComboBoxes() {
