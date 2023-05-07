@@ -938,9 +938,9 @@ void SimulationWindow::on_action_insert_pattern() {
 
 void SimulationWindow::on_action_help() {
     // Puts the file "Help.txt" into the "help" string
-    std::ifstream f("Help.txt");
+    std::ifstream f(Conf::working_dir() + HELP_FILE);
     std::string help;
-    std::ostringstream ss;
+    std::stringstream ss;
     ss << f.rdbuf();
     help = ss.str();
     // Create a pop-up message dialog
@@ -948,9 +948,15 @@ void SimulationWindow::on_action_help() {
     Gtk::ScrolledWindow scrolled_win;
     Gtk::Label label_help;
     label_help.set_use_markup(true);
-    label_help.set_label(help);
+#ifdef _WIN32
+    label_help.set_label("<span face='Consolas'>" + help + "</span>");
+#elif defined __linux__
+    label_help.set_label("<span face='Dejavu Sans Mono'>" + help + "</span>");
+#elif defined __APPLE__
+    label_help.set_label("<span face='SF Mono'>" + help + "</span>");
+#endif
     scrolled_win.add(label_help);
-    scrolled_win.set_size_request(500, 500);
+    scrolled_win.set_size_request(1000, 500);
     // Add the scrollable window to the message area
     Gtk::Box* marea = help_dial.get_message_area();
     marea->pack_start(scrolled_win);

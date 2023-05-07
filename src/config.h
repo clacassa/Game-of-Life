@@ -32,6 +32,7 @@ const std::string PROGRAM_AUTHOR("Cyprien Lacassagne");
 const std::string PROGRAM_ICON("share/icons/gol_lab.ico");
 
 const std::string PATTERNS_DIR("patterns/");
+const std::string HELP_FILE("Help.txt");
 const std::string SETTINGS_INI_FILE("etc/gtk-3.0/settings.ini");
 
 constexpr unsigned window_width(600);
