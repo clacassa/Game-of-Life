@@ -1,65 +1,37 @@
-Command: <b>Keybinding</b>
-    <i>Description</i>
-------------------------------------------------------------------------------------
-Start/Stop: <b>Space</b>
-    <i>Launches or pauses the simulation.</i>
+The followging actions are currently implemented in GoL Lab :  
 
-Step: <b>1</b>
-    <i>Performs one single update.</i>
-
-Clear: <b>2</b>
-    <i>Clears the board and prepares a new simulation for being run.</i>
-
-Random: <b>3</b>
-    <i>Randomly fills half the surface of the board with alive cells.</i>
-
-Reset: <b>4</b>
-    <i>When a file is open and modified, discards any change.</i>
-
-Glider gun: <b>5</b>
-    <i>Draws a gun that eternally launches gliders.</i>
-
-Spacefiller: <b>6</b>
-    <i>Draws a special figure that fills the board.</i>   
-
-Open: <b>Ctrl+O</b>
-    <i>Opens a file and initalizes the simulation with its content.</i>
-
-Save as: <b>Ctrl+S</b>
-    <i>Saves the current state of the simulation in a text file,   
-    which can then be opened to resume/launch a simulation.</i>
-
-Quit: <b>Ctrl+Q</b>
-    <i>Quits the application.</i>
-
-Zoom in: <b>Ctrl++</b>
-Zoom out: <b>Ctrl+-</b>
-Reset zoom: <b>Ctrl+0</b>
-    <i>Resets the zoom level to 0 (100%).</i>
-
-Show Grid:
-    <i>Displays a light gray grid over the board.  
-    It can help drawing cells on the board with the mouse.</i>
-
-Dark Theme:
-    <i>Switches to dark theme when ticked, to light theme when unticked.</i>
-
-Stability Detection: <b>Ctrl+T</b>
-    <i>Enables/Disables the S.D. (Stability Detection) mode. In this mode,  
-    the simulation stops as soon as the evolution stabilizes over time.</i>
-
-Pan left: <b>H</b>
-Pan down: <b>J</b>
-Pan up: <b>K</b>
-Pan right: <b>L</b>
-  
-World size  
-=> Extend: <b>Ctrl+PageUp</b>
-    <i>Increases the size of the board (virtual world) by 50px.</i>
-=> Shrink: <b>Ctrl+PageDown</b>
-    <i>Decreases the size of the board by 50px.</i>
-  
-Refresh:
-    <i>Allows you to change the speed of the simulation.  
-    The smaller the rate, the higher the fps.   
-    Be sure to stop and restart the simulation for the change to take effect.</i>
+Action                | Shortcut          | Description                                                                                      
+--------------------- | ----------------- | ------------------------------------------------------------------------------------------------ 
+New                   | Ctrl + N          | Resets everything with a new blank simulation (closes any opened file)                           
+Open                  | Ctrl + O          | Opens a text file to configure the simulation                                                    
+Save                  | Ctrl + S          | Saves the simulation                                                                             
+Save as               | Ctrl + Shift + S  | Renames the opend file or creates a new file, and saves the simulation                           
+Quit                  | Ctrl + Q          | Quits instantly the application without saving                                                   
+Cut                   | Ctrl + X          | Cuts the selection in the clipboard                                                              
+Copy                  | Ctrl + C          | Copies the selection in the clipboard                                                            
+Clear                 | Del/Suppr         | Clears the selection ("kills" the live cells in the selection rectangle)                        
+Paste                 | Ctrl + V          | Pastes the content of the clipboard                                                              
+Select all            | Ctrl + A          | Selects the whole board                                                                          
+Random Fill           | Ctrl + R          | Fills 50% of the board randomly                                                                  
+Rotate 90°            | R                 | Rotates the selection counter-clockwise by 90°                                                   
+Flip vertically       | Y                 | Flips the inserted pattern or the pasted selection vertically                                    
+Flip horizontally     | X                 | Same as above but horizontally                                                                   
+Cursor Mode > Draw    | F2                | Switches to drawing mode                                                                         
+Cursor Mode > Drag    | F3,               | Switches to drag mode                                                                            
+                      | Mouse wheel click |                                                                                                 
+Cursor Mode > Select  | F4                | Switches to selection mode                                                                       
+Zoom in               | Ctrl + +,         | Zooms in by 10%                                                                                  
+                      | Mouse wheel up    |                                                                                                  
+Zoom out              | Ctrl + -,         | Zooms out by 10%                                                                                 
+                      | Mouse wheel down  |                                                                                                  
+Reset zoom            | 0                 | Restores the zoom to its default value                                                           
+Show grid             | Ctrl + G          | Toggles the display of the grid                                                                  
+Fade effect           |                   | Toggles an effect in which the cells fade when they die (decreases the fps)                      
+Dark theme            | Ctrl + D          | Toggles light/dark theme                                                                         
+Color scheme          |                   | Allows you to change the color scheme independantly for light/dark mode                          
+Stability detection   | Ctrl + T          | Toggles the detection of stability : when enabled, the simulation stops as soon as it stabilizes 
+World size > Increase | Ctrl + PageUp     | Increases the world dimensions by 100 cells                                                      
+World size > Decrease | Ctrl + PageDown   | Decreases the world dimensions by 100 cells                                                      
+Insert pattern        | Ctrl + P          | Allows you to insert a pattern from the directory `patterns/`                                    
+Help                  | F1                | Shows this help window                                      
+About GoL Lab         |                   | Shows information relative to GoL Lab, such as the build, the logo, the license and the author  
