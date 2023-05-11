@@ -5,7 +5,7 @@ Action                | Shortcut          | Description
 New                   | Ctrl + N          | Resets everything with a new blank simulation (closes any opened file)                           
 Open                  | Ctrl + O          | Opens a text file to configure the simulation                                                    
 Save                  | Ctrl + S          | Saves the simulation                                                                             
-Save as               | Ctrl + Shift + S  | Renames the opend file or creates a new file, and saves the simulation                           
+Save as               | Ctrl + Shift + S  | Renames the opened file or creates a new file, and saves the simulation                           
 Quit                  | Ctrl + Q          | Quits instantly the application without saving                                                   
 Cut                   | Ctrl + X          | Cuts the selection in the clipboard                                                              
 Copy                  | Ctrl + C          | Copies the selection in the clipboard                                                            
