@@ -984,7 +984,7 @@ void SimulationWindow::on_button_about_clicked() {
     // Pre-release version
     about_dial.set_version(PROGRAM_VERSION);
     about_dial.set_hexpand(false);
-    about_dial.set_comments("Based on John Conway's game of life");
+    about_dial.set_comments("Game of Life laboratory");
     about_dial.set_wrap_license(true);
 
     about_dial.show_all_children();
