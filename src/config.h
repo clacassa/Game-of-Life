@@ -24,6 +24,8 @@
 #include <iostream>
 #include <string>
 
+// #define PREBUILT_BINARY_FOR_WINDOWS
+
 #define LIVE_ARRAY_OPTIMIZATION
 
 const std::string PROGRAM_NAME("GoL Lab");

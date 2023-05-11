@@ -1910,8 +1910,6 @@ void SimulationWindow::create_StatusBar() {
     m_StatusBar.set_valign(Gtk::ALIGN_END);
     m_StatusBar.set_vexpand(false);
     m_StatusBar.set_spacing(100);
-    m_StatusBar.push("This is a message", 0);
-    m_StatusBar.push("Another one", 1);
 }
 
 void SimulationWindow::create_ComboBoxes() {

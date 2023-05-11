@@ -39,6 +39,9 @@ void Conf::set_world_size(unsigned wsize) {
 
 std::string Conf::working_dir() {
 #ifdef _WIN32
+#  ifdef PREBUILT_BINARY_FOR_WINDOWS
+    return "";
+#  else
 	char path[MAX_PATH] = {0};
 	GetModuleFileNameA(NULL, path, MAX_PATH);
 
@@ -51,6 +54,7 @@ std::string Conf::working_dir() {
     
     size_t pos(directory.find_last_of('\\'));
     return std::string(directory.substr(0, pos+1));
+# endif
 #else
 #  ifndef __linux__
 #    define PATH_MAX 1024
