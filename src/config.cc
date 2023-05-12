@@ -39,9 +39,6 @@ void Conf::set_world_size(unsigned wsize) {
 
 std::string Conf::working_dir() {
 #ifdef _WIN32
-#  ifdef PREBUILT_BINARY_FOR_WINDOWS
-    return "";
-#  else
 	char path[MAX_PATH] = {0};
 	GetModuleFileNameA(NULL, path, MAX_PATH);
 
@@ -50,8 +47,9 @@ std::string Conf::working_dir() {
     strcpy(exe_path, executable_path.c_str());
     PathRemoveFileSpecA(exe_path);
     std::string directory = std::string(exe_path);
-    // delete exe_path;
-    
+#  ifdef PREBUILT_BINARY_FOR_WINDOWS
+    return directory + "\\";
+#  else
     size_t pos(directory.find_last_of('\\'));
     return std::string(directory.substr(0, pos+1));
 # endif

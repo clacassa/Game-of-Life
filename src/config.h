@@ -55,8 +55,6 @@ constexpr float ghost_color(0.6);
 
 class Conf {
 public:
-    // static unsigned world_size;
-    // static unsigned world_y_max;
     static void set_world_size(unsigned wsize);
     static unsigned get_x_max() { return world_x_max; }
     static unsigned get_y_max() { return world_y_max; }
