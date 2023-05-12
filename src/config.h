@@ -35,7 +35,11 @@ const std::string PROGRAM_ICON("share/icons/gol_lab.ico");
 
 const std::string PATTERNS_DIR("patterns/");
 const std::string HELP_FILE("Help.txt");
+#ifdef PREBUILT_VERSION_FOR_WINDOWS
+const std::string SETTINGS_INI_FILE("gtk-3.0/settings.ini");
+#else
 const std::string SETTINGS_INI_FILE("etc/gtk-3.0/settings.ini");
+#endif
 
 constexpr unsigned window_width(600);
 constexpr unsigned window_height(window_width/2);
@@ -59,6 +63,9 @@ public:
     static unsigned get_x_max() { return world_x_max; }
     static unsigned get_y_max() { return world_y_max; }
     static std::string working_dir();
+#ifdef PREBUILT_BINARY_FOR_WINDOWS
+    static std::string programData_dir();
+#endif
 private:
     static unsigned world_x_max;
     static unsigned world_y_max;

@@ -22,6 +22,7 @@
 #ifdef _WIN32
 #  include <windows.h>
 #  include <Shlwapi.h>
+#  include <Shlobj.h>
 #  include <io.h>
 #  define access _access_s
 #elif __linux__
@@ -60,10 +61,20 @@ std::string Conf::working_dir() {
 	char result[PATH_MAX];
 	ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
     std::string path(result, (count > 0) ? count : 0);
-    sizet_t pos = path.find_last_of('/');
+    size_t pos = path.find_last_of('/');
     path = path.substr(0, pos);
     pos = path.find_last_of('/');
     path = path.substr(0, pos+1);
     return path;
 #endif /* _WIN32 */
 }
+
+#ifdef PREBUILT_BINARY_FOR_WINDOWS
+std::string Conf::programData_dir() {
+    char path[MAX_PATH] = {0};
+    HRESULT hr = SHGetFolderPathA(NULL, CSIDL_COMMON_APPDATA, NULL, 0, path);
+    if (SUCCEEDED(hr))
+        return std::string(path) + "\\";
+    return "";
+}
+#endif

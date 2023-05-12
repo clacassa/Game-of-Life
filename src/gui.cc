@@ -1464,8 +1464,11 @@ bool SimulationWindow::on_key_press_event(GdkEventKey * key_event) {
 
 void SimulationWindow::read_settings() {
     Glib::KeyFile keyFile;
+#ifndef PREBUILT_BINARY_FOR_WINDOWS
     std::string settings_filepath(Conf::working_dir() + SETTINGS_INI_FILE);
-
+#else
+    std::string settings_filepath(Conf::programData_dir() + SETTINGS_INI_FILE);
+#endif
     keyFile.load_from_file(settings_filepath, Glib::KEY_FILE_KEEP_COMMENTS);
 
     dark_theme_on = keyFile.get_boolean(prefs::settings_group, prefs::dark_theme_key);
@@ -1480,8 +1483,11 @@ void SimulationWindow::write_settings() {
 
     const std::string light_s_new_keyval(std::to_string(m_ComboLight.get_active_row_number()));
     const std::string dark_s_new_keyval(std::to_string(m_ComboDark.get_active_row_number()));
-
+#ifdef PREBUILT_BINARY_FOR_WINDOWS
+    std::ifstream settings_file(Conf::programData_dir() + SETTINGS_INI_FILE);
+#else
     std::ifstream settings_file(Conf::working_dir() + SETTINGS_INI_FILE);
+#endif
     std::ostringstream ss;
     ss << settings_file.rdbuf();
     std::string str(ss.str());
@@ -1500,7 +1506,11 @@ void SimulationWindow::write_settings() {
     }
 
     settings_file.close();
+#ifdef PREBUILT_BINARY_FOR_WINDOWS
+    std::ofstream edited_settings(Conf::programData_dir() + SETTINGS_INI_FILE);
+#else
     std::ofstream edited_settings(Conf::working_dir() + SETTINGS_INI_FILE);
+#endif
     edited_settings << str;
 }
 
