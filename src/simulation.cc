@@ -508,7 +508,7 @@ void toggle_fade_effect() {
 }
 
 std::string message::file_does_not_exist() {
-    return current_filename + " : no such file found on disk.\n"
+    return current_filename + " : no such file was found on disk.\n"
            "Please check the spelling and the location of the file.";
 }
 
@@ -519,8 +519,9 @@ std::string message::invalid_file_format() {
 std::string message::invalid_world_dimensions() {
     return "File: " + current_filename + "\n"
            "Line " + std::to_string(file_error.line_number) + ":\t" + file_error.line + "\n"
-           "The simulation could not be configured because of one of the followings:\n"
+           "The simulation could not be configured because of one of the following reasons:\n"
            "\t- The file is empty\n"
+           "\t- The file does not respect the configuration format\n"
            "\t- The dimensions are out of range : [" + std::to_string(world_size_min) 
            + "," + std::to_string(world_size_max) + "]\n" 
            "\t- The aspect ratio is different than 2";
