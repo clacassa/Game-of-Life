@@ -454,10 +454,12 @@ void SimulationWindow::on_button_reset_clicked() {
     init();
     read_file(filename);
     set_default_frame();
+    zoom_frame();
     this->set_title(this->get_title().replace(0, 1, ""));
     m_Label_Info.set_label("<b>Generation=" + std::to_string(val) + "</b>");
     m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
     m_LabelSize.set_text(std::to_string(Conf::get_x_max()) + "x" + std::to_string(Conf::get_y_max()));
+    m_Area.refresh();
 }
 
 void SimulationWindow::on_button_slower_clicked() {
@@ -974,7 +976,7 @@ void SimulationWindow::on_button_about_clicked() {
 
     about_dial.set_program_name(PROGRAM_NAME);
     about_dial.set_authors(authors);
-    about_dial.set_copyright("Copyright (C) 2022 Cyprien Lacassagne");
+    about_dial.set_copyright("Copyright \u00A9 2022-2023 Cyprien Lacassagne");
     about_dial.set_website("https://github.com/clacassa/Game-of-Life");
     about_dial.set_website_label("Github page");
     // Hide the license button
@@ -1027,10 +1029,13 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
                     button_type = LEFT;
                     if (inserting_pattern) {
                         new_pattern(x, y, m_Area.get_pattern());
+                        file_modified();
                         break;
                     }
-                    if (current_action == DRAW)
+                    if (current_action == DRAW) {
                         draw(x, y);
+                        file_modified();
+                    }
                     break;
                 case 2:
                     button_type = MIDDLE;
@@ -1041,16 +1046,18 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
                     button_type = RIGHT;
                     if (inserting_pattern) {
                         new_pattern(x, y, m_Area.get_pattern());
+                        file_modified();
                         break;
                     }
-                    if (current_action == DRAW)
+                    if (current_action == DRAW) {
                         new_death(x, y);
+                        file_modified();
+                    }
                     break;
                 default:
                     break;
                 }
                 m_Area.refresh();
-                file_modified();
                 m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
             }
 		}
@@ -1233,6 +1240,7 @@ void SimulationWindow::on_action_cut() {
     toolbutton_copy->set_sensitive(false);
     clearMi->set_sensitive(false);
     m_Area.refresh();
+    file_modified();
 }
 
 void SimulationWindow::on_action_copy() {
@@ -1265,7 +1273,9 @@ void SimulationWindow::on_action_clear() {
     copyMi->set_sensitive(false);
     toolbutton_copy->set_sensitive(false);
     clearMi->set_sensitive(false);
+    file_modified();
     m_Area.refresh();
+    m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
 }
 
 void SimulationWindow::on_action_paste() {
