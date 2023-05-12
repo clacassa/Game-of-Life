@@ -35,7 +35,7 @@ const std::string PROGRAM_ICON("share/icons/gol_lab.ico");
 
 const std::string PATTERNS_DIR("patterns/");
 const std::string HELP_FILE("Help.txt");
-#ifdef PREBUILT_VERSION_FOR_WINDOWS
+#ifdef PREBUILT_BINARY_FOR_WINDOWS
 const std::string SETTINGS_INI_FILE("gtk-3.0/settings.ini");
 #else
 const std::string SETTINGS_INI_FILE("etc/gtk-3.0/settings.ini");
