@@ -677,6 +677,8 @@ void SimulationWindow::on_action_zoom_in() {
     }
     zoomoutMi->set_sensitive(true);
     toolbutton_zoomout->set_sensitive(true);
+    resetzoomMi->set_sensitive();
+    toolbutton_resetzoom->set_sensitive();
 }
 
 void SimulationWindow::on_action_zoom_out() {
@@ -694,6 +696,8 @@ void SimulationWindow::on_action_zoom_out() {
     }
     zoominMi->set_sensitive(true);
     toolbutton_zoomin->set_sensitive(true);
+    resetzoomMi->set_sensitive();
+    toolbutton_resetzoom->set_sensitive();
 }
 
 void SimulationWindow::on_action_reset_zoom() {
@@ -707,6 +711,12 @@ void SimulationWindow::on_action_reset_zoom() {
         zoomoutMi->set_sensitive();
         toolbutton_zoomin->set_sensitive();
         toolbutton_zoomout->set_sensitive();
+    }else if (zoom == 100) {
+        zoomoutMi->set_sensitive(false);
+        toolbutton_zoomout->set_sensitive(false);
+    }else if (zoom == zoom_max) {
+        zoominMi->set_sensitive(false);
+        toolbutton_zoomin->set_sensitive(false);
     }
 }
 
