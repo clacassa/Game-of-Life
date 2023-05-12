@@ -20,7 +20,7 @@ OUT = gol_lab
 CXX = g++
 CXXFLAGS = -g -Wall -O3 -std=c++17
 LINKING = `pkg-config --cflags gtkmm-3.0`
-LDLIBS = `pkg-config --libs gtkmm-3.0` -L ./lib/ -lshlwapi
+LDLIBS = `pkg-config --libs gtkmm-3.0`
 EXEDIR = ./bin
 SRC_DIR = ./src
 OBJ_DIR = ./obj
@@ -28,10 +28,10 @@ SRCS = main.cc gui.cc simulation.cc graphic.cc config.cc
 CXXFILES = $(SRCS:%=$(SRC_DIR)/%)
 OFILES = $(SRCS:.cc=.o)
 
-# On Windows, start the program without a console in the background
-# and link an icon to it so it appears in the taskbar
+# Additionnal build flags for Windows (-mwindows: no terminal in the background)
 ifeq ($(OS),Windows_NT)
 CXXFLAGS += -mwindows
+LDLIBS += -L ./lib/ -lshlwapi
 RESFILES = ./res/my.res
 endif
 
