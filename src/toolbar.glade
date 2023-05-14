@@ -30,7 +30,7 @@
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="action-name">file.open</property>
-                <property name="label" translatable="yes">Open</property>
+                <property name="label" translatable="yes">Open...</property>
                 <property name="use-underline">True</property>
                 <accelerator key="o" signal="activate" modifiers="GDK_CONTROL_MASK"/>
               </object>
@@ -50,7 +50,7 @@
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="action-name">file.saveas</property>
-                <property name="label" translatable="yes">Save as</property>
+                <property name="label" translatable="yes">Save as...</property>
                 <property name="use-underline">True</property>
                 <accelerator key="s" signal="activate" modifiers="GDK_SHIFT_MASK | GDK_CONTROL_MASK"/>
               </object>
@@ -333,7 +333,7 @@
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="action-name">view.scheme</property>
-                <property name="label" translatable="yes">Color Scheme</property>
+                <property name="label" translatable="yes">Color Scheme...</property>
                 <property name="use-underline">True</property>
               </object>
             </child>
@@ -401,7 +401,7 @@
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="action-name">tools.pattern</property>
-                <property name="label" translatable="yes">Insert Pattern</property>
+                <property name="label" translatable="yes">Insert Pattern...</property>
                 <property name="use-underline">True</property>
                 <accelerator key="p" signal="activate" modifiers="GDK_CONTROL_MASK"/>
               </object>
@@ -579,7 +579,7 @@
       <object class="GtkToolButton" id="toolbutton_draw">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="tooltip-text" translatable="yes">Drawing mode</property>
+        <property name="tooltip-text" translatable="yes">Draw cells</property>
         <property name="action-name">edit.draw</property>
         <property name="label" translatable="yes">_Draw</property>
         <property name="use-underline">True</property>
@@ -594,7 +594,7 @@
       <object class="GtkToolButton" id="toolbutton_drag">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="tooltip-text" translatable="yes">Navigation mode</property>
+        <property name="tooltip-text" translatable="yes">Drag the frame</property>
         <property name="action-name">edit.drag</property>
         <property name="label" translatable="yes">_Drag</property>
         <property name="use-underline">True</property>
@@ -609,7 +609,7 @@
       <object class="GtkToolButton" id="toolbutton_select">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="tooltip-text" translatable="yes">Selection mode</property>
+        <property name="tooltip-text" translatable="yes">Select cells</property>
         <property name="action-name">edit.select</property>
         <property name="label" translatable="yes">_Selection</property>
         <property name="use-underline">True</property>
