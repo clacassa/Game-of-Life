@@ -1,7 +1,7 @@
 
 ## About GoL Lab
 
-GoL Lab is a laboratory to explore the famous cellular automaton Game of Life (GoL) thought by the mathematician John Conway in the late 60's. It features view controls, editing and basic simulation tools, such as stability detection and RLE file format parser. GoL Lab is a free software, licensed under the GPL and written in C++.  
+GoL Lab stands for "Game of Life Laboratory" whose purpose it to explore the famous cellular automaton Game of Life (GoL) thought by the mathematician John Conway in the late 60's. It features view controls, editing and basic simulation tools, such as stability detection and RLE file format parser. GoL Lab is a free software, licensed under the GPL and written in C++.  
 
 ## Dev notes
 
@@ -10,8 +10,8 @@ Please note that the Stability Detection feature needs some improvement, as it c
 
 ## Installation (Windows only)
 
-* From the installer (Build 0.2.1, August 2022);  
-  - Download [the installer](https://github.com/clacassa/GoL-Lab/releases).  
+* From the installer  
+  - Download and run [the installer](https://github.com/clacassa/GoL-Lab/releases).  
   - Just follow the installation instructions.  
 
 ## Building the application
@@ -42,7 +42,7 @@ The followging actions are currently implemented in GoL Lab :
 | New                   | Ctrl + N         | Resets everything with a new blank simulation (closes any opened file) |  
 | Open                  | Ctrl + O         | Opens a text file to configure the simulation |
 | Save                  | Ctrl + S         | Saves the simulation |
-| Save as               | Ctrl + Shift + S | Renames the opend file or creates a new file, and saves the simulation |
+| Save as               | Ctrl + Shift + S | Renames the opened file or creates a new file, and saves the simulation |
 | Quit                  | Ctrl + Q         | Quits instantly the application without saving |
 | Cut                   | Ctrl + X         | Cuts the selection in the clipboard |
 | Copy                  | Ctrl + C         | Copies the selection in the clipboard |
@@ -72,25 +72,29 @@ The followging actions are currently implemented in GoL Lab :
 
 ## Customization
 
-You can customize the appearance of GoL Lab by editing the file `etc/gtk-3.0/settings.ini`.  
-Note that as the application is built with GTK, Linux users might not be concerned by this section, as their system theme can override GoL Lab settings.  
+You can customize the appearance of GoL Lab by editing the file `etc/gtk-3.0/settings.ini` (`C:/ProgramData/gtk-3.0/settings.ini` if you used the installer for Windows).   
+Note that as the application is built with GTK, Linux users might not be concerned by this section, as their system theme can override GoL Lab settings. I am planning to make an installation program for Linux soon.  
   
 Just edit the value of the `gtk-theme-name` key as following : 
   
 To give a native look to the GUI,  
-- On MacOS: replace `Venta` with `MacOS`.  
-- On Windows:  `Venta` should do the job, but you can try the built-in Windows theme `win32`. Note however that some ui elements are missing and that Dark mode is not available.   
+- On MacOS: replace `Windows10` with `MacOS`.  
+- On Windows:  `Windows10` should do the job, but you can try the built-in Windows theme `win32`. Note however that some ui elements are missing and that Dark mode is not available.   
 
 If the native look is not you proprity, feel free to try out these good loocking themes:  
 - Skeuos-Green
-- Shades-of-gray  (really nice, but comes with no Light mode)  
+- Shades-of-gray  (really nice, but no light mode available)  
 
 The themes are stored in `share/themes`.  
 
 ## Todo
 
+- Make an installer for Linux and MacOS.  
+
 ## Credits
 
 - [MacOS](https://github.com/B00merang-Project/macOS)  
+- [Windows10](https://github.com/B00merang-Project/Windows-10)
 - [Skeuos-Green](https://github.com/daniruiz/skeuos-gtk)  
-- [Venta](https://www.gnome-look.org/p/1386774)  
+- [Shades-of-gray](https://github.com/WernerFP/Shades-of-gray-theme)
+
