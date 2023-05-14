@@ -672,7 +672,7 @@ void SimulationWindow::on_action_saveas() {
     if (response == Gtk::RESPONSE_ACCEPT) {
         filename = dialog->get_filename();
         save_file(filename);
-        set_title(filename + this->get_title());
+        set_title(filename_from_filepath(filename) + " - " this->get_title());
     }    
 }
 
