@@ -1,4 +1,3 @@
-
 /*
  * gui.h
  * This file is part of GoL Lab, a simulator of Conway's game of life.
@@ -119,9 +118,11 @@ protected:
     void create_StatusBar();
     void create_ComboBoxes();
     void create_patterns_ComboBox();
+
     void zoom_frame();
-    void updt_statusbar_coord();
+    void updt_statusbar();
     void file_modified();
+    bool save_changes_dialog();
     // Error dialog relative to file opening or reading
     void error_dialog_open(Glib::ustring error_message, Glib::ustring details);
 
@@ -189,14 +190,15 @@ protected:
 
     bool on_timeout();
     // Called when any conventional key is pressed
-    bool on_key_press_event(GdkEventKey * key_event);
+    bool on_key_press_event(GdkEventKey * key_event) override;
     // Called when any mouse button is pressed
-    bool on_button_press_event(GdkEventButton * event);
+    bool on_button_press_event(GdkEventButton * event) override;
     // Set a pencil as cursor for the mouse once any mouse button is released
-    bool on_button_release_event(GdkEventButton * event);
+    bool on_button_release_event(GdkEventButton * event) override;
     // Called when one moves and holds the mouse over the drawing area
-    bool on_motion_notify_event(GdkEventMotion * event);
-    bool on_scroll_event(GdkEventScroll * event);
+    bool on_motion_notify_event(GdkEventMotion * event) override;
+    bool on_scroll_event(GdkEventScroll * event) override;
+    bool on_delete_event(GdkEventAny * any_event) override;
 
     void on_combo_light_changed();
     void on_combo_dark_changed();
@@ -274,8 +276,7 @@ protected:
     Gtk::Button m_Button_Start, m_Button_Step, m_Button_Reset,
                 m_Button_Slower, m_Button_Faster;
     // Gtk::Scale m_Scale;
-    Gtk::Label m_Label_Info, m_Label_Test, m_LabelSize, m_LabelZoom,
-               m_LabelCoordinates, m_Label_Population, m_Label_Refresh;
+    Gtk::Label m_Label_Refresh;
 
     Gtk::Statusbar m_StatusBar;
 

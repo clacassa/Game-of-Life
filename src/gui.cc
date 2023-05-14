@@ -387,10 +387,17 @@ void SimulationWindow::zoom_frame() {
     m_Area.refresh();
 }
 
-void SimulationWindow::updt_statusbar_coord() {
-    x = std::to_string((default_frame.xMax + (int)default_frame.xMin) / 2 + 1);
-    y = std::to_string((default_frame.yMax + (int)default_frame.yMin) / 2 + 1);
-    m_LabelCoordinates.set_text("x=" + x + "    y=" + y);
+void SimulationWindow::updt_statusbar() {
+    const Glib::ustring generation("Generation: " + std::to_string(val) + "\t\t");
+    const Glib::ustring population("Population: " + std::to_string(get_alive()) + "\t\t");
+    const Glib::ustring mouse_coord("x: " + std::to_string(x_mouse) + ", y: " + std::to_string(y_mouse));
+    const Glib::ustring zoom_level("\t\t" + std::to_string(zoom) + "%\t\t");
+    const Glib::ustring dim(std::to_string(Conf::get_x_max()) + "x" + std::to_string(Conf::get_y_max()));
+    Glib::ustring status(generation + population + mouse_coord + zoom_level + dim);
+    if (experiment)
+        status = "Stability detection enabled\t" + status;
+    m_StatusBar.pop();
+    m_StatusBar.push(status);
 }
 
 // The asterisk shows that change are occuring, but the file
@@ -404,8 +411,40 @@ void SimulationWindow::file_modified() {
     }
 }
 
+bool SimulationWindow::save_changes_dialog() {
+    const Glib::ustring file(filename_from_filepath(filename));
+    const Glib::ustring msg("Do you want to save changes to \"" + file + "\"?");
+    Gtk::MessageDialog dialog(msg, false, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_NONE, true);
+    dialog.add_button("_Save", Gtk::RESPONSE_YES);
+    dialog.add_button("_Don't Save", Gtk::RESPONSE_NO);
+    dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
+    dialog.set_transient_for(*this);
+    int result = dialog.run();
+    switch (result) {
+        case Gtk::RESPONSE_YES:
+            on_action_save();
+            break;
+        case Gtk::RESPONSE_NO:
+            return false;
+        case Gtk::RESPONSE_CANCEL:
+            break;
+        default: 
+            break;
+    }
+    return true;
+}
+
 void SimulationWindow::on_action_quit() {
-    hide();
+    close();
+}
+
+bool SimulationWindow::on_delete_event(GdkEventAny * any_event) {
+    if (m_Button_Reset.get_sensitive()) {
+        if (save_changes_dialog())
+            return true;
+        return false;
+    }
+    return false;
 }
 
 void SimulationWindow::on_button_start_clicked() {
@@ -456,9 +495,7 @@ void SimulationWindow::on_button_reset_clicked() {
     set_default_frame();
     zoom_frame();
     this->set_title(this->get_title().replace(0, 1, ""));
-    m_Label_Info.set_label("<b>Generation=" + std::to_string(val) + "</b>");
-    m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
-    m_LabelSize.set_text(std::to_string(Conf::get_x_max()) + "x" + std::to_string(Conf::get_y_max()));
+    updt_statusbar();
     m_Area.refresh();
 }
 
@@ -526,14 +563,7 @@ void SimulationWindow::on_action_random() {
     if (!randomMi->get_sensitive())
         return;
     init();
-    file_modified();
-    if (experiment) {
-        m_Label_Test.set_label("Stability detection=<span foreground='blue'>ON</span>");
-        m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
-    }else {
-        m_Label_Test.set_label("Stability detection=<span foreground='blue'>OFF</span>");
-    }
-    
+    file_modified();    
     // Randomly fill half of the grid
     unsigned rand_x, rand_y;
     for (unsigned index(0); index < (Conf::get_x_max()*Conf::get_y_max())/2; ++index) {
@@ -541,6 +571,7 @@ void SimulationWindow::on_action_random() {
         rand_y = rand() % Conf::get_y_max();
         new_birth(rand_x, rand_y);
     }
+    updt_statusbar();
     m_Area.refresh();
 }
 
@@ -564,9 +595,7 @@ void SimulationWindow::on_action_open() {
         if (parsing_result == 0) {
 
             on_action_reset_zoom();
-            m_Label_Info.set_label("<span weight='bold' > Generation : " + std::to_string(val) + "</span>");
-            m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
-            m_LabelSize.set_text(std::to_string(Conf::get_x_max()) + " x "+ std::to_string(Conf::get_y_max()));
+            updt_statusbar();
 
             if (Conf::get_x_max() == world_size_min) decrsizeMi->set_sensitive(false);
             if (Conf::get_x_max() == world_size_max) incrsizeMi->set_sensitive(false);
@@ -588,7 +617,7 @@ void SimulationWindow::on_action_open() {
 void SimulationWindow::parse_file_error(int parsing_result) {
     const Glib::ustring no_such_file("Failed to open the file");
     const Glib::ustring wrong_file_format("Wrong file format");
-    const Glib::ustring wrong_config_format("Configuration file format not respected");
+    const Glib::ustring wrong_config_format("Configuration format not respected");
     switch (parsing_result)
     {
     case 1:
@@ -643,23 +672,23 @@ void SimulationWindow::on_action_saveas() {
     if (response == Gtk::RESPONSE_ACCEPT) {
         filename = dialog->get_filename();
         save_file(filename);
+        set_title(filename + this->get_title());
     }    
 }
 
 void SimulationWindow::on_action_experiment() {
     if (experiment) {
         experiment = false;
-        m_Label_Test.set_label("Stability detection=<span foreground='blue'>OFF</span>");
         experimentMi->unset_state_flags(Gtk::STATE_FLAG_CHECKED);
         toggletoolbutton_experiment->unset_state_flags(Gtk::STATE_FLAG_ACTIVE);
 
     }else {
         experiment = true;
-        m_Label_Test.set_label("Stability detection=<span foreground='blue'>ON</span>");
         experimentMi->set_state_flags(Gtk::STATE_FLAG_CHECKED);
         // toggletoolbutton_experiment->set_state_flags(Gtk::STATE_FLAG_ACTIVE);
         toggletoolbutton_experiment->set_state_flags(Gtk::STATE_FLAG_CHECKED);
     }
+    updt_statusbar();
 }
 
 void SimulationWindow::on_action_zoom_in() {
@@ -668,13 +697,11 @@ void SimulationWindow::on_action_zoom_in() {
     zoom += 10;
     zoom_frame();
 
-    m_LabelZoom.set_text(std::to_string(zoom) + "%");
-    updt_statusbar_coord();
-
     if (zoom == zoom_max) {
         zoominMi->set_sensitive(false);
         toolbutton_zoomin->set_sensitive(false);
     }
+    updt_statusbar();
     zoomoutMi->set_sensitive(true);
     toolbutton_zoomout->set_sensitive(true);
     resetzoomMi->set_sensitive();
@@ -687,13 +714,11 @@ void SimulationWindow::on_action_zoom_out() {
     zoom -= 10;
     zoom_frame();
 
-    m_LabelZoom.set_text(std::to_string(zoom) + "%");
-    updt_statusbar_coord();
-
     if (zoom == 100) {
         zoomoutMi->set_sensitive(false);
         toolbutton_zoomout->set_sensitive(false);
     }
+    updt_statusbar();
     zoominMi->set_sensitive(true);
     toolbutton_zoomin->set_sensitive(true);
     resetzoomMi->set_sensitive();
@@ -703,9 +728,6 @@ void SimulationWindow::on_action_zoom_out() {
 void SimulationWindow::on_action_reset_zoom() {
     zoom = default_zoom;
     zoom_frame();
-    updt_statusbar_coord();
-
-    m_LabelZoom.set_text(std::to_string(zoom) + "%");
     if (zoom > 100) {
         zoominMi->set_sensitive();
         zoomoutMi->set_sensitive();
@@ -718,6 +740,7 @@ void SimulationWindow::on_action_reset_zoom() {
         zoominMi->set_sensitive(false);
         toolbutton_zoomin->set_sensitive(false);
     }
+    updt_statusbar();
 }
 
 void SimulationWindow::pan_frame_left(unsigned offset) {
@@ -726,13 +749,12 @@ void SimulationWindow::pan_frame_left(unsigned offset) {
     if (offset <= default_frame.xMin) {
         default_frame.xMin -= offset;
         default_frame.xMax -= offset;
-
-        updt_statusbar_coord();
-        m_Area.refresh();
     }else {
         default_frame.xMax -= default_frame.xMin;
         default_frame.xMin = -1;
     }
+    updt_statusbar();
+    m_Area.refresh();
 }
 
 void SimulationWindow::pan_frame_right(unsigned offset) {
@@ -741,13 +763,12 @@ void SimulationWindow::pan_frame_right(unsigned offset) {
     if (offset <= Conf::get_x_max() - default_frame.xMax) {
         default_frame.xMin += offset;
         default_frame.xMax += offset;
-
-        updt_statusbar_coord();
-        m_Area.refresh();
     }else {
         default_frame.xMin += Conf::get_x_max()-default_frame.xMax;
         default_frame.xMax = Conf::get_x_max();
     }
+    updt_statusbar();
+    m_Area.refresh();
 }
 
 void SimulationWindow::pan_frame_up(unsigned offset) {
@@ -756,13 +777,12 @@ void SimulationWindow::pan_frame_up(unsigned offset) {
     if (offset <= Conf::get_y_max() - default_frame.yMax) {
         default_frame.yMin += offset;
         default_frame.yMax += offset;
-
-        updt_statusbar_coord();
-        m_Area.refresh();
     }else {
         default_frame.yMin += Conf::get_y_max()-default_frame.yMax;
         default_frame.yMax = Conf::get_y_max();
     }
+    updt_statusbar();
+    m_Area.refresh();
 }
 
 void SimulationWindow::pan_frame_down(unsigned offset) {
@@ -771,13 +791,12 @@ void SimulationWindow::pan_frame_down(unsigned offset) {
     if (offset <= default_frame.yMin) {
         default_frame.yMin -= offset;
         default_frame.yMax -= offset;
-
-        updt_statusbar_coord();
-        m_Area.refresh();
     }else {
         default_frame.yMax -= default_frame.yMin;
         default_frame.yMin = -1;
     }
+    updt_statusbar();
+    m_Area.refresh();
 }
 
 void SimulationWindow::on_button_increase_size_clicked() {
@@ -797,8 +816,7 @@ void SimulationWindow::on_button_increase_size_clicked() {
     set_default_frame();
     // on_action_reset_zoom();
     adjust_bool_grid();
-    m_LabelSize.set_text(std::to_string(Conf::get_x_max()) + " x "
-                       + std::to_string(Conf::get_y_max()));
+    updt_statusbar();
     m_Area.refresh();
 }
 
@@ -819,8 +837,7 @@ void SimulationWindow::on_button_decrease_size_clicked() {
     set_default_frame();
     // on_action_reset_zoom();
     adjust_bool_grid();
-    m_LabelSize.set_text(std::to_string(Conf::get_x_max()) + " x "
-                       + std::to_string(Conf::get_y_max()));
+    updt_statusbar();
     m_Area.refresh();
 }
 
@@ -1032,7 +1049,6 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
             if (x < (int)Conf::get_x_max() && y < (int)Conf::get_y_max()) {
                 x_mouse = x;
                 y_mouse = y;
-                m_LabelCoordinates.set_text("x=" + std::to_string(x_mouse) + "    y=" + std::to_string(y_mouse));
                 switch (event->button)
                 {
                 case 1:
@@ -1067,8 +1083,8 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
                 default:
                     break;
                 }
+                updt_statusbar();
                 m_Area.refresh();
-                m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
             }
 		}
 	}
@@ -1080,7 +1096,7 @@ bool SimulationWindow::on_button_release_event(GdkEventButton * event) {
     if (!in_MyArea_window)
         return false;
 
-    if (current_action == SELECT && !inserting_pattern)
+    if (current_action == SELECT && !inserting_pattern && !dragging_frame)
         update_selection();
 
     bool selection_empty(!(m_Area.get_selection().empty()));
@@ -1102,7 +1118,7 @@ bool SimulationWindow::on_button_release_event(GdkEventButton * event) {
     button_type = NONE;
     x_0_sel_mouse = x_mouse;
     y_0_sel_mouse = y_mouse;
-    m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
+    updt_statusbar();
     m_Area.refresh();
     return true;
 }
@@ -1134,7 +1150,6 @@ bool SimulationWindow::on_motion_notify_event(GdkEventMotion * event) {
         if (x < (int)Conf::get_x_max() && y < (int)Conf::get_y_max() && x >= 0 && y >= 0) {
             x_mouse = x;
             y_mouse = y;
-            m_LabelCoordinates.set_text("x=" + std::to_string(x_mouse) + "    y=" + std::to_string(y_mouse));
             switch (button_type)
             {
             case LEFT:
@@ -1157,8 +1172,8 @@ bool SimulationWindow::on_motion_notify_event(GdkEventMotion * event) {
                 y_0_sel_mouse = y_mouse;
                 break;
             }
+            updt_statusbar();
             m_Area.refresh();
-            m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
         }
     }
     return true;
@@ -1220,17 +1235,13 @@ void SimulationWindow::on_action_new() {
     init();
     this->set_title(PROGRAM_NAME);
 
-    m_Label_Info.set_label("<b>Generation=" + std::to_string(val) + "</b>");
-    m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
+    updt_statusbar();
     m_Button_Reset.set_sensitive(false);
     saveMi->set_sensitive(false);
     toolbutton_save->set_sensitive(false);
     filename = "";
 
-    if (experiment)
-        m_Label_Test.set_label("Stability detection=<span foreground='blue'>ON</span>");
-    else
-        m_Label_Test.set_label("Stability detection=<span foreground='blue'>OFF</span>");
+    updt_statusbar();
     m_Area.refresh();
 }
 
@@ -1284,8 +1295,8 @@ void SimulationWindow::on_action_clear() {
     toolbutton_copy->set_sensitive(false);
     clearMi->set_sensitive(false);
     file_modified();
+    updt_statusbar();
     m_Area.refresh();
-    m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
 }
 
 void SimulationWindow::on_action_paste() {
@@ -1297,6 +1308,7 @@ void SimulationWindow::on_action_paste() {
 }
 
 void SimulationWindow::on_action_select_all() {
+    on_action_cursor_select();
     std::vector<Coordinates> sel_all(get_live_cells_in_area(0, Conf::get_x_max()-1,
                                                             0, Conf::get_y_max()-1));
     m_Area.set_selection(sel_all);
@@ -1389,23 +1401,18 @@ bool SimulationWindow::on_timeout() {
 
     if (experiment) {
         if (update(EXPERIMENTAL)) {
-            // Update the stability detection status label
-            m_Label_Test.set_label("<span foreground='green'>Stable</span>");
-
             // Reset the properties of the start button
             m_Button_Start.set_label("Start");
             Glib::RefPtr<Gtk::CssProvider> css_provider = Gtk::CssProvider::create();
             css_provider->load_from_data("button {background-image: image(green);}");
-            m_Button_Start.get_style_context()->add_provider(css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
-            m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
+            m_Button_Start.get_style_context()->add_provider(css_provider,
+                                                             GTK_STYLE_PROVIDER_PRIORITY_USER);
             if (val < 4)
-                m_Label_Info.set_label("<b>Generation=" + std::to_string(0) + "</b>");
+                val = 0;
             else
-                m_Label_Info.set_label("<b>Generation=" + std::to_string(val-4) + "</b>");
+                val -= 4;
             // Stop the timer
             on_event_delete_timer();
-        }else {
-            m_Label_Test.set_label("Stability detection=<span foreground='blue'>ON</span>");
         }
     }else {
         update();
@@ -1415,8 +1422,9 @@ bool SimulationWindow::on_timeout() {
         --val;
     }
     ++val;
-    m_Label_Info.set_label("<b>Generation=" + std::to_string(val) + "</b>");
-    m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
+    updt_statusbar();
+    if (current_action == SELECT)
+        update_selection();
     file_modified();
     m_Area.refresh();
     return true;
@@ -1905,41 +1913,11 @@ void SimulationWindow::create_control_buttons() {
 }
 
 void SimulationWindow::create_StatusBar() {
-    // - for the simulation size
-    m_LabelSize.set_text(m_LabelSize.get_text() + std::to_string(Conf::get_x_max())
-                        + " x " + std::to_string(Conf::get_y_max()));
-    m_LabelSize.set_halign(Gtk::ALIGN_END);
-    m_LabelSize.set_hexpand(false);
-    // - for the zoom level
-    m_LabelZoom.set_text(std::to_string(zoom) + "%");
-    m_LabelZoom.set_halign(Gtk::ALIGN_END);
-    m_LabelZoom.set_hexpand(false);
-    // - for the coordinates
-    m_LabelCoordinates.set_text("x=" + x + "    y=" +y);
-    m_LabelCoordinates.set_halign(Gtk::ALIGN_END);
-    m_LabelCoordinates.set_hexpand(false);
-    // - for the sim. info
-    m_Label_Info.set_label("<b>Generation=" + std::to_string(val) + "</b>");
-    m_Label_Info.set_halign(Gtk::ALIGN_END);
-    m_Label_Info.set_hexpand(false);
-    m_Label_Info.set_use_markup(true);
-    m_Label_Population.set_label("<b>Population=" + std::to_string(get_alive()) + "</b>");
-    m_Label_Population.set_halign(Gtk::ALIGN_END);
-    m_Label_Population.set_hexpand(false);
-    m_Label_Population.set_use_markup(true);
-
-    m_Label_Test.set_use_markup(true);
-
-    // Create StatusBar
-    m_StatusBar.pack_end(m_LabelSize, false, false);
-    m_StatusBar.pack_end(m_LabelZoom, false, false);
-    m_StatusBar.pack_end(m_LabelCoordinates, false, false);
-    m_StatusBar.pack_end(m_Label_Info, false, false);
-    m_StatusBar.pack_end(m_Label_Population, false, false);
-    m_StatusBar.pack_end(m_Label_Test, false, false);
     m_StatusBar.set_valign(Gtk::ALIGN_END);
     m_StatusBar.set_vexpand(false);
-    m_StatusBar.set_spacing(100);
+    m_StatusBar.set_halign(Gtk::ALIGN_END);
+    m_StatusBar.set_hexpand();
+    updt_statusbar();
 }
 
 void SimulationWindow::create_ComboBoxes() {
