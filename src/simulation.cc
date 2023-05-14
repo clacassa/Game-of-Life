@@ -165,7 +165,7 @@ void save_file(std::string filename) {
     saved_file << "# ========== Configuration File for Gol Lab ==========\n"
                   "#\n"
                   "# File name: " << name << "\n"
-                  "# Last edited: "<< __DATE__ << "\n"
+                  "# Edited on: "<< __DATE__ << "\n"
                   "# Format: pseudo Life 1.06\n"
                   "#\n"
                   "# ====================================================\n\n"
@@ -518,10 +518,9 @@ std::string message::invalid_file_format() {
 
 std::string message::invalid_world_dimensions() {
     return "File: " + current_filename + "\n"
-           "Line " + std::to_string(file_error.line_number) + ":\t" + file_error.line + "\n"
+           "Line " + std::to_string(file_error.line_number) + ":\t" + file_error.line + "\n\n"
            "The simulation could not be configured because of one of the following reasons:\n"
-           "\t- The file is empty\n"
-           "\t- The file does not respect the configuration format\n"
+           "\t- The file does not contain the correct information\n"
            "\t- The dimensions are out of range : [" + std::to_string(world_size_min) 
            + "," + std::to_string(world_size_max) + "]\n" 
            "\t- The aspect ratio is different than 2";
@@ -529,7 +528,7 @@ std::string message::invalid_world_dimensions() {
 
 std::string message::invalid_cell_coordinate() {
     return "File: " + current_filename + "\n"
-           "Line " + std::to_string(file_error.line_number) + " :\t" + file_error.line +"\n"
+           "Line " + std::to_string(file_error.line_number) + " :\t" + file_error.line +"\n\n"
            "The simulation could not be configured because one coordinate is out of range: "
            "[0," + std::to_string(x_max) + "]x[0," + std::to_string(y_max) + "].";
 }
