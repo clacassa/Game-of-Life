@@ -392,7 +392,7 @@ void SimulationWindow::updt_statusbar() {
     const Glib::ustring population("Population: " + std::to_string(get_alive()) + "\t\t");
     const Glib::ustring mouse_coord("x: " + std::to_string(x_mouse) + ", y: " + std::to_string(y_mouse));
     const Glib::ustring zoom_level("\t\t" + std::to_string(zoom) + "%\t\t");
-    const Glib::ustring dim(std::to_string(Conf::get_x_max()) + "x" + std::to_string(Conf::get_y_max()));
+    const Glib::ustring dim(std::to_string(Conf::get_x_max()) + " x " + std::to_string(Conf::get_y_max()));
     Glib::ustring status(generation + population + mouse_coord + zoom_level + dim);
     if (experiment)
         status = "Stability detection enabled\t" + status;
