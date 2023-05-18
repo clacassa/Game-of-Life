@@ -115,6 +115,7 @@ std::string filename_from_filepath(std::string filepath) {
 int read_file(std::string filename) {
     current_filename = filename;
     state = WORLD_SIZE;
+    file_error = {INEXISTANT_FILE, 0, ""};
     i = 0;
     total = 0;
     x = 0;
