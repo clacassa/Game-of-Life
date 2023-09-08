@@ -24,7 +24,7 @@ LDLIBS = `pkg-config --libs gtkmm-3.0`
 EXEDIR = ./bin
 SRC_DIR = ./src
 OBJ_DIR = ./obj
-SRCS = main.cc gui.cc simulation.cc graphic.cc config.cc
+SRCS = main.cc gui.cc command.cc simulation.cc graphic.cc config.cc
 CXXFILES = $(SRCS:%=$(SRC_DIR)/%)
 OFILES = $(SRCS:.cc=.o)
 
@@ -62,14 +62,15 @@ depend:
 		$(CXX) -MM $(CXXFLAGS) $(CXXFILES) | \
 		egrep -v "/usr/include") > Makefile.new
 	@mv Makefile.new Makefile
-
 #
 # -- Regles de dependances generes automatiquement -- 
 #
-#  DO NOT DELETE THIS LINE
+# DO NOT DELETE THIS LINE
 main.o: src/main.cc src/simulation.h src/config.h src/graphic.h src/gui.h
 gui.o: src/gui.cc src/gui.h src/simulation.h src/config.h src/graphic.h \
  src/graphic_gui.h src/prefs.h
+command.o: src/command.cc src/command.h src/simulation.h src/config.h \
+ src/graphic.h
 simulation.o: src/simulation.cc src/simulation.h src/config.h \
  src/graphic.h
 graphic.o: src/graphic.cc src/graphic_gui.h src/graphic.h src/config.h

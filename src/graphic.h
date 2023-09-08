@@ -22,6 +22,7 @@
 #define GRAPHIC_H_INCLUDED
 
 #include <vector>
+#include "config.h"
 
 struct Color {
     double r;
@@ -32,11 +33,6 @@ struct Color {
 struct Scheme {
     Color fg;
     Color bg;
-};
-
-struct Coordinates {
-    unsigned x;
-    unsigned y;
 };
 
 // -----Colors-----

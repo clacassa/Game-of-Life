@@ -27,7 +27,7 @@
 #include "config.h"
 
 namespace {
-    enum reading_State { 
+    enum ReadingState { 
         WORLD_SIZE,
         NB_CELLS,
         COORDINATES,
@@ -52,7 +52,6 @@ namespace {
         unsigned height;
     };
 
-    typedef std::vector<std::vector<bool>> Grid;
     typedef std::vector<Coordinates> LineBuffer;
 
     ReadingError line_decoding(std::string line);
@@ -73,7 +72,7 @@ namespace {
 #endif
     std::vector<Coordinates> dead, dead2, dead3, dead4;
 
-    reading_State state(WORLD_SIZE);
+    ReadingState state(WORLD_SIZE);
     ErrorInfo file_error = {INEXISTANT_FILE, 0, ""};
 
     std::string current_filename;
@@ -478,7 +477,7 @@ void display() {
         }
     }
 }
- 
+
 void init() {
     for (unsigned i(0); i < grid.size(); ++i) {
         for (unsigned j(0); j < grid[i].size(); ++j) {
@@ -497,6 +496,15 @@ void init() {
     nb_alive = 0;
 }
 
+void set_state(const Grid saved_state) {
+    for (unsigned i(0); i < saved_state.size(); ++i) {
+        for (unsigned j(0); j < saved_state[i].size(); ++j) {
+            if (saved_state[i][j])
+                new_birth(j, Conf::get_y_max() - 1 - i);
+        }
+    }
+}
+
 void toggle_fade_effect() {
     if (fade_effect_enabled) {
         fade_effect_enabled = false;
@@ -506,6 +514,10 @@ void toggle_fade_effect() {
         dead4.clear();
     }else
         fade_effect_enabled = true;
+}
+
+Grid simulation::get_state() {
+    return updated_grid;
 }
 
 std::string message::file_does_not_exist() {

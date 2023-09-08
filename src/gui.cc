@@ -283,7 +283,8 @@ SimulationWindow::SimulationWindow(Glib::RefPtr<Gtk::Application> app,
     filename(__filename),
     x(std::to_string(default_frame.xMax / 2)),
     y(std::to_string(default_frame.yMax / 2)),
-    button_type(NONE)
+    button_type(NONE),
+    cmd_index(-1)
 {
     maximize();
     set_position(Gtk::WIN_POS_CENTER);
@@ -388,16 +389,30 @@ void SimulationWindow::zoom_frame() {
 }
 
 void SimulationWindow::updt_statusbar() {
+    const Glib::ustring index("Index: " + std::to_string(cmd_index) + "\t\t");
     const Glib::ustring generation("Generation: " + std::to_string(val) + "\t\t");
     const Glib::ustring population("Population: " + std::to_string(get_alive()) + "\t\t");
     const Glib::ustring mouse_coord("x: " + std::to_string(x_mouse) + ", y: " + std::to_string(y_mouse));
     const Glib::ustring zoom_level("\t\t" + std::to_string(zoom) + "%\t\t");
     const Glib::ustring dim(std::to_string(Conf::get_x_max()) + " x " + std::to_string(Conf::get_y_max()));
-    Glib::ustring status(generation + population + mouse_coord + zoom_level + dim);
+    Glib::ustring status(index + generation + population + mouse_coord + zoom_level + dim);
     if (experiment)
         status = "Stability detection enabled\t" + status;
     m_StatusBar.pop();
     m_StatusBar.push(status);
+}
+
+void SimulationWindow::stabilize_history() {
+    ++cmd_index;
+    unsigned threshold(cmd_history.size() - cmd_index);
+    unsigned n_cmd(cmd_history.size());
+    for (unsigned i(0); i < threshold; ++i) {
+        delete cmd_history[n_cmd - 1 - i];
+        cmd_history.pop_back();
+    }
+    undoMi->set_sensitive();
+    if (cmd_index == cmd_history.size() - 1)
+        redoMi->set_sensitive(false);
 }
 
 // The asterisk shows that change are occuring, but the file
@@ -562,15 +577,13 @@ void SimulationWindow::on_button_faster_clicked() {
 void SimulationWindow::on_action_random() {
     if (!randomMi->get_sensitive())
         return;
-    init();
-    file_modified();    
-    // Randomly fill half of the grid
-    unsigned rand_x, rand_y;
-    for (unsigned index(0); index < (Conf::get_x_max()*Conf::get_y_max())/2; ++index) {
-        rand_x = rand() % Conf::get_x_max();
-        rand_y = rand() % Conf::get_y_max();
-        new_birth(rand_x, rand_y);
-    }
+
+    ++cmd_index;
+    cmd_history.push_back(new Randomize(simulation::get_state()));
+    cmd_history[cmd_history.size()-1]->execute();
+    undoMi->set_sensitive();
+
+    file_modified();
     updt_statusbar();
     m_Area.refresh();
 }
@@ -1054,12 +1067,16 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
                 case 1:
                     button_type = LEFT;
                     if (inserting_pattern) {
-                        new_pattern(x, y, m_Area.get_pattern());
+                        stabilize_history();
+                        cmd_history.push_back(new InsertRLEPattern(x, y, m_Area.get_pattern()));
+                        cmd_history[cmd_index]->execute();
                         file_modified();
                         break;
                     }
                     if (current_action == DRAW) {
-                        draw(x, y);
+                        stabilize_history();
+                        cmd_history.push_back(new AddCellCommand(x, y));
+                        cmd_history[cmd_index]->execute();
                         file_modified();
                     }
                     break;
@@ -1076,7 +1093,9 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
                         break;
                     }
                     if (current_action == DRAW) {
-                        new_death(x, y);
+                        stabilize_history();
+                        cmd_history.push_back(new RemoveCellCommand(x, y));
+                        cmd_history[cmd_index]->execute();
                         file_modified();
                     }
                     break;
@@ -1088,7 +1107,7 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
             }
 		}
 	}
-	return Gtk::Window::on_button_press_event(event);
+	return true;
 }
 
 bool SimulationWindow::on_button_release_event(GdkEventButton * event) {
@@ -1153,16 +1172,22 @@ bool SimulationWindow::on_motion_notify_event(GdkEventMotion * event) {
             switch (button_type)
             {
             case LEFT:
-                if (current_action == DRAW)
-                    draw(x, y);
+                if (current_action == DRAW) {
+                    stabilize_history();
+                    cmd_history.push_back(new AddCellCommand(x, y));
+                    cmd_history[cmd_index]->execute();
+                }
                 else if (current_action == DRAG)
                     drag_frame();
                 else if (current_action == SELECT)
                     update_selection();
                 break;
             case RIGHT:
-                if (current_action == DRAW)
-                    new_death(x, y);
+                if (current_action == DRAW) {
+                    stabilize_history();
+                    cmd_history.push_back(new RemoveCellCommand(x, y));
+                    cmd_history[cmd_index]->execute();
+                }
                 break;
             case MIDDLE:
                     drag_frame();
@@ -1242,6 +1267,28 @@ void SimulationWindow::on_action_new() {
     filename = "";
 
     updt_statusbar();
+    m_Area.refresh();
+}
+
+void SimulationWindow::on_action_undo() {
+    if (!undoMi->get_sensitive())
+        return;
+    cmd_history[cmd_index]->undo();
+    --cmd_index;
+    redoMi->set_sensitive();
+    if (cmd_index < 0)
+        undoMi->set_sensitive(false);
+    m_Area.refresh();
+}
+
+void SimulationWindow::on_action_redo() {
+    if (!redoMi->get_sensitive())
+        return;
+    ++cmd_index;
+    if (cmd_index >= cmd_history.size() - 1)
+        redoMi->set_sensitive(false);
+    cmd_history[cmd_index]->execute();
+    undoMi->set_sensitive();
     m_Area.refresh();
 }
 
@@ -1546,6 +1593,10 @@ void SimulationWindow::create_action_groups(Glib::RefPtr<Gtk::Application> app) 
             &SimulationWindow::on_action_quit));
         
     auto m_refEditActionGroup = Gio::SimpleActionGroup::create();
+    m_refEditActionGroup->add_action("undo", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_undo));
+    m_refEditActionGroup->add_action("redo", sigc::mem_fun(*this,
+            &SimulationWindow::on_action_redo));
     m_refEditActionGroup->add_action("cut", sigc::mem_fun(*this,
             &SimulationWindow::on_action_cut));
 
@@ -1631,6 +1682,8 @@ void SimulationWindow::create_action_groups(Glib::RefPtr<Gtk::Application> app) 
     app->set_accel_for_action("file.saveas", "<Primary><Shift>s");
     app->set_accel_for_action("file.quit", "<Primary>q");
     insert_action_group("edit", m_refEditActionGroup);
+    app->set_accel_for_action("edit.undo", "<Primary>z");
+    app->set_accel_for_action("edit.redo", "<Primary><Shift>z");
     app->set_accel_for_action("edit.cut", "<Primary>x");
     app->set_accel_for_action("edit.copy", "<Primary>c");
     app->set_accel_for_action("edit.paste", "<Primary>v");
@@ -1680,6 +1733,18 @@ void SimulationWindow::instantiate_menubar_from_glade() {
     if (!saveMi)
         g_warning("GtkMenuItem not found: saveMi");
     saveMi->set_sensitive(false);
+
+    undoMi = nullptr;
+    m_refBuilder->get_widget("undoMi", undoMi);
+    if (!undoMi)
+        g_warning("GtkMenuItem not found");
+    undoMi->set_sensitive(false);
+
+    redoMi = nullptr;
+    m_refBuilder->get_widget("redoMi", redoMi);
+    if (!redoMi)
+        g_warning("GtkMenuItem not found");
+    redoMi->set_sensitive(false);
 
     cutMi = nullptr;
     m_refBuilder->get_widget("cutMi", cutMi);

@@ -22,6 +22,7 @@
 #define GUI_H_INCLUDED
 
 #include <gtkmm.h>
+#include "command.h"
 #include "simulation.h"
 
 enum Action { DRAW, SELECT, DRAG };
@@ -121,6 +122,7 @@ protected:
 
     void zoom_frame();
     void updt_statusbar();
+    void stabilize_history();
     void file_modified();
     bool save_changes_dialog();
     // Error dialog relative to file opening or reading
@@ -142,6 +144,8 @@ protected:
     void on_action_saveas();
     void on_action_quit();
     // Edit actions
+    void on_action_undo();
+    void on_action_redo();
     void on_action_cut();
     void on_action_copy();
     void on_action_clear();
@@ -221,6 +225,8 @@ protected:
     Gtk::MenuItem* saveMi;
     Gtk::MenuItem saveasMi;
     Gtk::MenuItem quitMi;
+    Gtk::MenuItem* undoMi;
+    Gtk::MenuItem* redoMi;
     Gtk::MenuItem* cutMi;
     Gtk::MenuItem* copyMi;
     Gtk::MenuItem* clearMi;
@@ -306,6 +312,8 @@ protected:
     std::string x, y;
 
     ButtonType button_type;
+    History cmd_history;
+    int cmd_index;
 };
 
 #endif

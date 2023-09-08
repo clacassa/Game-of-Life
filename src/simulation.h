@@ -29,6 +29,8 @@
 
 enum Mode { NORMAL, EXPERIMENTAL };
 
+typedef std::vector<std::vector<bool>> Grid;
+
 /**
  * Erase the absolute file path to keep only the file name.
  */
@@ -69,6 +71,7 @@ void display();
  * Reset everything.
  */
 void init();
+void set_state(const Grid);
 
 /** 
  * Update the simulation (compute the n+1 state).
@@ -94,6 +97,9 @@ void del_pattern(unsigned x, unsigned y, std::vector<Coordinates> pattern);
  */
 void draw_cells(unsigned color_theme);
 
+namespace simulation {
+    Grid get_state();
+}
 
 namespace message {
     /**

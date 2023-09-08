@@ -28,6 +28,11 @@
 
 #define LIVE_ARRAY_OPTIMIZATION
 
+struct Coordinates {
+    unsigned x;
+    unsigned y;
+};
+
 const std::string PROGRAM_NAME("GoL Lab");
 const std::string PROGRAM_VERSION("0.3.0");
 const std::string PROGRAM_AUTHOR("Cyprien Lacassagne");
