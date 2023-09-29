@@ -41,8 +41,8 @@ RESFILES = ./res/my.res
 else
 RMDLL = if [ -f "$(EXEDIR)/zlib1.dll" ]; \
 		then echo "Removing the unnecessary dll files..." \
-		&& rm -f $(EXEDIR)/*.dll ; \
-		&& echo "\tDone" \
+		&& rm -f $(EXEDIR)/*.dll \
+		&& echo "\tDone" ; \
 		fi
 endif
 
