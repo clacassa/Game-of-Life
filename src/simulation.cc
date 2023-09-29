@@ -161,7 +161,6 @@ void simulation::save_file(std::string filename) {
     saved_file << "# ========== Configuration File for Gol Lab ==========\n"
                   "#\n"
                   "# File name: " << name << "\n"
-                  "# Edited on: "<< __DATE__ << "\n"
                   "# Format: Life 1.06\n"
                   "#\n"
                   "# ====================================================\n\n"
