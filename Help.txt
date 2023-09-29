@@ -36,4 +36,4 @@ Increase world size   | Ctrl + PageUp     | Enlarges the world by 100 cells in w
 Decrease world size   | Ctrl + PageDown   | Shrinks the world by 100 cells in width and 50 cells in height                   
 Insert a pattern      | Ctrl + P          | Allows you to insert an RLE formatted pattern from the directory `patterns/`      
 Help                  | F1                | Shows this help window                                      
-About GoL Lab         |                   | Shows information relative to GoL Lab, such as its version and author 
+About GoL Lab         |                   | Shows information relative to GoL Lab, such as its version and the license 
