@@ -42,7 +42,7 @@ else
 RMDLL = if [ -f "$(EXEDIR)/zlib1.dll" ]; \
 		then echo "Removing the unnecessary dll files..." \
 		&& rm -f $(EXEDIR)/*.dll ; \
-		&& echo "\tDone"
+		&& echo "\tDone" \
 		fi
 endif
 
