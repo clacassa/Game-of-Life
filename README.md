@@ -3,7 +3,7 @@
 
 GoL Lab stands for "Game of Life Laboratory" whose purpose it to explore the famous cellular automaton Game of Life (GoL) thought by the mathematician John Conway in the late 60's. It features view controls, editing and basic simulation tools, such as stability detection and RLE file format parser. GoL Lab is a free software, licensed under the GPL and written in C++. 
 
-Version 1.0.0 09/29/2023
+Version 1.0.0 09/29/2023  
 Copyright (C) 2022-2023 Cyprien Lacassagne   
 
 ## Installation (Windows only)
