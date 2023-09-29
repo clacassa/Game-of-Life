@@ -39,8 +39,10 @@ CXXFLAGS += -mwindows
 LDLIBS += -L ./lib/ -lshlwapi
 RESFILES = ./res/my.res
 else
-	@echo "Removing the unnecessary dll files"
-	@rm -f $(EXEDIR)/*.dll
+RMDLL = if [ -f "$(EXEDIR)/zlib1.dll" ]; \
+		then echo "Removing the unnecessary dll files" \
+		&& rm -f $(EXEDIR)/*.dll ; \
+		fi
 endif
 
 
@@ -56,6 +58,7 @@ $(EXEDIR)/$(OUT): $(OFILES)
 
 .PHONY: setup
 setup:
+	@${RMDLL}
 	@mkdir -p $(OBJ_DIR)
 	@if [ -f "$(OBJ_DIR)/main.o" ]; \
 	then mv $(OBJ_DIR)/* . ;\
