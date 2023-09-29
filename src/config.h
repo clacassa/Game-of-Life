@@ -24,27 +24,12 @@
 #include <iostream>
 #include <string>
 
-// #define PREBUILT_BINARY_FOR_WINDOWS
-
 #define LIVE_ARRAY_OPTIMIZATION
 
 struct Coordinates {
     unsigned x;
     unsigned y;
 };
-
-const std::string PROGRAM_NAME("GoL Lab");
-const std::string PROGRAM_VERSION("0.3.0");
-const std::string PROGRAM_AUTHOR("Cyprien Lacassagne");
-const std::string PROGRAM_ICON("share/icons/gol_lab.ico");
-
-const std::string PATTERNS_DIR("patterns/");
-const std::string HELP_FILE("Help.txt");
-#ifdef PREBUILT_BINARY_FOR_WINDOWS
-const std::string SETTINGS_INI_FILE("gtk-3.0/settings.ini");
-#else
-const std::string SETTINGS_INI_FILE("etc/gtk-3.0/settings.ini");
-#endif
 
 constexpr unsigned window_width(600);
 constexpr unsigned window_height(window_width/2);
@@ -53,7 +38,7 @@ constexpr unsigned cell_size(1);
 constexpr unsigned reserve(500);
 
 constexpr unsigned world_size_max(5000);
-constexpr unsigned world_size_min(50);
+constexpr unsigned world_size_min(100);
 constexpr unsigned increment_step(100);
 
 constexpr unsigned startup_timeout_value(20);
@@ -62,18 +47,28 @@ constexpr unsigned idle_timeout(5);
 constexpr unsigned dialog_button_margin(200);
 constexpr float ghost_color(0.6);
 
-class Conf {
+class World {
 public:
     static void set_world_size(unsigned wsize);
     static unsigned get_x_max() { return world_x_max; }
     static unsigned get_y_max() { return world_y_max; }
-    static std::string working_dir();
-#ifdef PREBUILT_BINARY_FOR_WINDOWS
-    static std::string programData_dir();
-#endif
 private:
     static unsigned world_x_max;
     static unsigned world_y_max;
 };
+
+
+const std::string PROGRAM_NAME("GoL Lab");
+const std::string VERSION("1.0.0");
+
+const std::string PATTERNS_DIR("patterns/");
+const std::string HELP_FILE("Help.txt");
+const std::string SETTINGS_INI_FILE("etc/gtk-3.0/settings.ini");
+
+/**
+ * @return The absolute path of the working directory (path to
+ * the executable). 
+ */
+std::string working_dir();
 
 #endif

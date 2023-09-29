@@ -45,10 +45,10 @@ void graphic_set_context(const Cairo::RefPtr<Cairo::Context>& cr) {
     ptcr = &cr;
 }
 
-void graphic_draw_world(double xMax, double yMax, unsigned ref_color, bool show_grid, unsigned delta) {
-    (*ptcr)->set_source_rgb(current_color_scheme[ref_color].bg.r,
-                            current_color_scheme[ref_color].bg.g,
- 	                        current_color_scheme[ref_color].bg.b);                            
+void graphic_draw_world(double xMax, double yMax, bool dark_theme, bool show_grid, unsigned delta) {
+    (*ptcr)->set_source_rgb(current_color_scheme[dark_theme].bg.r,
+                            current_color_scheme[dark_theme].bg.g,
+ 	                        current_color_scheme[dark_theme].bg.b);                            
     (*ptcr)->paint();
     (*ptcr)->stroke();
 
@@ -64,9 +64,9 @@ void graphic_draw_world(double xMax, double yMax, unsigned ref_color, bool show_
     (*ptcr)->stroke();
 
     if (show_grid && delta <= 501) {
-        double red(current_color_scheme[ref_color].fg.r);
-        double green(current_color_scheme[ref_color].fg.g);
-        double blue(current_color_scheme[ref_color].fg.b);
+        double red(current_color_scheme[dark_theme].fg.r);
+        double green(current_color_scheme[dark_theme].fg.g);
+        double blue(current_color_scheme[dark_theme].fg.b);
         (*ptcr)->set_source_rgb(ghost_color*red, ghost_color*green, ghost_color*blue);
 
         unsigned step;
@@ -97,18 +97,24 @@ void graphic_draw_world(double xMax, double yMax, unsigned ref_color, bool show_
     }
 }
 
-void graphic_draw_cell(unsigned x, unsigned y, unsigned ref_color, 
-                       float fg_r_offset, float fg_g_offset, float fg_b_offset) {
-    if (current_color_scheme[ref_color].fg.r >= 0.5
-        && current_color_scheme[ref_color].fg.g >= 0.5
-        && current_color_scheme[ref_color].fg.b >= 0.5) {
-        fg_r_offset *= -1;
-        fg_g_offset *= -1;
-        fg_b_offset *= -1;
-    }
-    (*ptcr)->set_source_rgb(current_color_scheme[ref_color].fg.r+fg_r_offset, 
-                            current_color_scheme[ref_color].fg.g+fg_g_offset,
-                            current_color_scheme[ref_color].fg.b+fg_b_offset);
+void graphic_draw_cell(unsigned x, unsigned y, bool dark_theme) {
+    (*ptcr)->set_source_rgb(current_color_scheme[dark_theme].fg.r,
+                            current_color_scheme[dark_theme].fg.g,
+                            current_color_scheme[dark_theme].fg.b);
+    (*ptcr)->set_line_width(0.0001);
+
+    (*ptcr)->move_to(x - cell_size/2., y - cell_size/2.);
+    (*ptcr)->line_to(x - cell_size/2., y + cell_size/2.);
+    (*ptcr)->line_to(x + cell_size/2., y + cell_size/2.);
+    (*ptcr)->line_to(x + cell_size/2., y - cell_size/2.);
+
+    (*ptcr)->close_path();
+    (*ptcr)->fill_preserve();
+    (*ptcr)->stroke();
+}
+
+void graphic_draw_cell(unsigned x, unsigned y, const Color override_color) {
+    (*ptcr)->set_source_rgb(override_color.r, override_color.g, override_color.b);
     (*ptcr)->set_line_width(0.0001);
 
     (*ptcr)->move_to(x - cell_size/2., y - cell_size/2.);
@@ -137,28 +143,34 @@ void graphic_fade_dead(unsigned x, unsigned y, const Color gray) {
 }
 
 void graphic_ghost_pattern(unsigned x, unsigned y, 
-                           std::vector<Coordinates> cells, unsigned ref_color) {
+                           std::vector<Coordinates> cells, bool dark_theme) {
     (*ptcr)->move_to(x, y);
-    for (auto& e : cells) {
-        graphic_draw_cell(x + e.x, y + e.y, ref_color, -ghost_color, -ghost_color, 0.5);
+    if (current_color_scheme[dark_theme].bg.r >= 0.5) {
+        for (auto& e : cells) {
+            graphic_draw_cell(x + e.x, y + e.y, blue);
+        }
+    }else {
+        for (auto& e : cells) {
+            graphic_draw_cell(x + e.x, y + e.y, yellow);
+        }
     }
     (*ptcr)->stroke();
 }
 
 void graphic_draw_select_rec(unsigned x_0, unsigned y_0, unsigned x, 
-                             unsigned y, unsigned ref_color) {
-    (*ptcr)->set_source_rgba(current_color_scheme[ref_color].fg.r*ghost_color,
-                             current_color_scheme[ref_color].fg.g*ghost_color,
-                             current_color_scheme[ref_color].fg.b,
-                             0.5);
+                             unsigned y, bool dark_theme) {
+    (*ptcr)->set_source_rgba(current_color_scheme[dark_theme].fg.r*0.6,
+                             current_color_scheme[dark_theme].fg.g*0.6,
+                             current_color_scheme[dark_theme].fg.b*1.2,
+                             0.35);
 
-    if (current_color_scheme[ref_color].fg.r == 0
-        && current_color_scheme[ref_color].fg.g == 0 
-        && current_color_scheme[ref_color].fg.b == 0) {
-        (*ptcr)->set_source_rgba(current_color_scheme[ref_color].fg.r,
-                                 current_color_scheme[ref_color].fg.g,
-                                 current_color_scheme[ref_color].fg.b+ghost_color/2.,
-                                 0.5);
+    if (current_color_scheme[dark_theme].fg.r == 0
+        && current_color_scheme[dark_theme].fg.g == 0 
+        && current_color_scheme[dark_theme].fg.b == 0) {
+        (*ptcr)->set_source_rgba(current_color_scheme[dark_theme].fg.r,
+                                 current_color_scheme[dark_theme].fg.g,
+                                 current_color_scheme[dark_theme].fg.b+0.3,
+                                 0.35);
     }
 
     double width = (double)x - (double)x_0;
@@ -179,9 +191,12 @@ void graphic_draw_select_rec(unsigned x_0, unsigned y_0, unsigned x,
     (*ptcr)->stroke();
 }
 
-void graphic_highlight_selected_cells(std::vector<Coordinates> selected_cells, unsigned ref_color) {
+void graphic_highlight_selected_cells(std::vector<Coordinates> selected_cells, bool dark_theme) {
+    const Color current_fg(current_color_scheme[dark_theme].fg);
+    const Color current_bg(current_color_scheme[dark_theme].bg);
+
     for (auto& e : selected_cells) {
-        graphic_draw_cell(e.x, e.y, ref_color, 0.0, 0.6, 0.3);
+        graphic_draw_cell(e.x, e.y, {current_color_scheme[dark_theme].highlight});
     }
 }
 

@@ -30,15 +30,15 @@
 #  include <unistd.h>
 #endif
 
-unsigned Conf::world_x_max = reserve;
-unsigned Conf::world_y_max = reserve/2;
+unsigned World::world_x_max = reserve;
+unsigned World::world_y_max = reserve/2;
 
-void Conf::set_world_size(unsigned wsize) {
+void World::set_world_size(unsigned wsize) {
     world_x_max = wsize;
     world_y_max = world_x_max/2;
 }
 
-std::string Conf::working_dir() {
+std::string working_dir() {
 #ifdef _WIN32
 	char path[MAX_PATH] = {0};
 	GetModuleFileNameA(NULL, path, MAX_PATH);
@@ -48,12 +48,8 @@ std::string Conf::working_dir() {
     strcpy(exe_path, executable_path.c_str());
     PathRemoveFileSpecA(exe_path);
     std::string directory = std::string(exe_path);
-#  ifdef PREBUILT_BINARY_FOR_WINDOWS
-    return directory + "\\";
-#  else
     size_t pos(directory.find_last_of('\\'));
     return std::string(directory.substr(0, pos+1));
-# endif
 #else
 #  ifndef __linux__
 #    define PATH_MAX 1024
@@ -68,13 +64,3 @@ std::string Conf::working_dir() {
     return path;
 #endif /* _WIN32 */
 }
-
-#ifdef PREBUILT_BINARY_FOR_WINDOWS
-std::string Conf::programData_dir() {
-    char path[MAX_PATH] = {0};
-    HRESULT hr = SHGetFolderPathA(NULL, CSIDL_COMMON_APPDATA, NULL, 0, path);
-    if (SUCCEEDED(hr))
-        return std::string(path) + "\\";
-    return "";
-}
-#endif

@@ -28,21 +28,28 @@ SRCS = main.cc gui.cc command.cc simulation.cc graphic.cc config.cc
 CXXFILES = $(SRCS:%=$(SRC_DIR)/%)
 OFILES = $(SRCS:.cc=.o)
 
+# MacOS
+ifeq ($(UNAME_S), Darwin)
+export PKG_CONFIG_PATH = $PKG_CONFIG_PATH:/usr/local/Cellar/libffi/3.2.1/lib/pkgconfig
+endif
+
 # Additionnal build flags for Windows (-mwindows: no terminal in the background)
-ifeq ($(OS),Windows_NT)
+ifeq ($(OS), Windows_NT)
 CXXFLAGS += -mwindows
 LDLIBS += -L ./lib/ -lshlwapi
 RESFILES = ./res/my.res
 endif
 
+
 all: setup $(EXEDIR)/$(OUT)
-	@mv *.o $(OBJ_DIR)
+	@mv $(OFILES) $(OBJ_DIR)
 
 $(EXEDIR)/$(OUT): $(OFILES)
 	$(CXX) $(CXXFLAGS) $(LINKING) $(OFILES) $(RESFILES) -o $@ $(LDLIBS)
 
 %.o: $(SRC_DIR)/%.cc
 	$(CXX) $(CXXFLAGS) $(LINKING) -c $< -o $@ $(LINKING)
+
 
 .PHONY: setup
 setup:
@@ -51,13 +58,17 @@ setup:
 	then mv $(OBJ_DIR)/* . ;\
 	fi
 
+.PHONY: run
+run: all
+	$(EXEDIR)/$(OUT)
+
 .PHONY: clean
 clean:
 	@rm -f $(EXEDIR)/$(OUT) && rm -r -f  $(OBJ_DIR)
 
 .PHONY: depend
 depend:
-	@echo " *** MIS A JOUR DES DEPENDANCES ***"
+	@echo " *** DEPENDENCIES UPDATE ***"
 	@(sed '/^# DO NOT DELETE THIS LINE/q' Makefile && \
 		$(CXX) -MM $(CXXFLAGS) $(CXXFILES) | \
 		egrep -v "/usr/include") > Makefile.new

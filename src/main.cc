@@ -35,25 +35,15 @@ int main(int argc, char* argv[]) {
 	if (argc == 2) {
 		if (std::string(argv[1]).find_first_of("-") != 0) {
 			filename = argv[1];
-			result = read_file(filename);
-			if (result != 0)
-				filename = "";
+			result = simulation::read_file(filename);
 		}
 	}
 	argc = 1;
-	Conf::set_world_size(reserve);
 
 	srand((unsigned) time(0));
 
 	auto app = Gtk::Application::create(argc, argv, "com.github.clacassa.GoL-Lab");
 	SimulationWindow window(app, filename, result);
-
-	if (filename.empty())
-		window.set_title(PROGRAM_NAME);
-	else {
-		filename = filename_from_filepath(filename);
-		window.set_title(filename + "  -  " + PROGRAM_NAME);
-	}
 
 	return app->run(window);
 }

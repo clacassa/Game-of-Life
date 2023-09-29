@@ -1,37 +1,39 @@
-The followging actions are currently implemented in GoL Lab :  
+This table summarizes all the actions featured in the program to give you a better idea of their usage:
 
 Action                | Shortcut          | Description                                                                                      
---------------------- | ----------------- | ------------------------------------------------------------------------------------------------ 
-New                   | Ctrl + N          | Resets everything with a new blank simulation (closes any opened file)                           
-Open                  | Ctrl + O          | Opens a text file to configure the simulation                                                    
-Save                  | Ctrl + S          | Saves the simulation                                                                             
-Save as               | Ctrl + Shift + S  | Renames the opened file or creates a new file, and saves the simulation                           
-Quit                  | Ctrl + Q          | Quits instantly the application without saving                                                   
-Cut                   | Ctrl + X          | Cuts the selection in the clipboard                                                              
-Copy                  | Ctrl + C          | Copies the selection in the clipboard                                                            
-Clear                 | Del/Suppr         | Clears the selection ("kills" the live cells in the selection rectangle)                        
-Paste                 | Ctrl + V          | Pastes the content of the clipboard                                                              
-Select all            | Ctrl + A          | Selects the whole board                                                                          
-Random Fill           | Ctrl + R          | Fills 50% of the board randomly                                                                  
-Rotate 90°            | R                 | Rotates the selection counter-clockwise by 90°                                                   
-Flip vertically       | Y                 | Flips the inserted pattern or the pasted selection vertically                                    
-Flip horizontally     | X                 | Same as above but horizontally                                                                   
-Cursor Mode > Draw    | F2                | Switches to drawing mode                                                                         
-Cursor Mode > Drag    | F3,               | Switches to drag mode                                                                            
-                      | Mouse wheel click |                                                                                                 
-Cursor Mode > Select  | F4                | Switches to selection mode                                                                       
-Zoom in               | Ctrl + +,         | Zooms in by 10%                                                                                  
-                      | Mouse wheel up    |                                                                                                  
-Zoom out              | Ctrl + -,         | Zooms out by 10%                                                                                 
-                      | Mouse wheel down  |                                                                                                  
-Reset zoom            | 0                 | Restores the zoom to its default value                                                           
-Show grid             | Ctrl + G          | Toggles the display of the grid                                                                  
-Fade effect           |                   | Toggles an effect in which the cells fade when they die (decreases the fps)                      
-Dark theme            | Ctrl + D          | Toggles light/dark theme                                                                         
-Color scheme          |                   | Allows you to change the color scheme independantly for light/dark mode                          
-Stability detection   | Ctrl + T          | Toggles the detection of stability : when enabled, the simulation stops as soon as it stabilizes 
-World size > Increase | Ctrl + PageUp     | Increases the world dimensions by 100 cells                                                      
-World size > Decrease | Ctrl + PageDown   | Decreases the world dimensions by 100 cells                                                      
-Insert pattern        | Ctrl + P          | Allows you to insert a pattern from the directory `patterns/`                                    
+--------------------- | ----------------- | --------------------------------------------------------------------------------
+New                   | Ctrl + N          | Resets everything with a new blank simulation (closes any opened file)          
+Open                  | Ctrl + O          | Opens a .lif file defining the initial configuration of the simulation          
+Save                  | Ctrl + S          | Saves the simulation to the opened file                                          
+Save as               | Ctrl + Shift + S  | Renames the opened file or creates a new file, and saves the simulation          
+Quit                  | Ctrl + Q          | Quits the program, asks to save changes if a file is opened                      
+Undo                  | Ctrl + Z          | Cancels the last executed action
+Redo                  | Ctrl + Sihft + Z  | Executes the last canceled action
+Cut                   | Ctrl + X          | Cuts the selection in the clipboard                                              
+Copy                  | Ctrl + C          | Copies the selection in the clipboard                                           
+Clear                 | Del/Suppr         | Clears the selection ("kills" the selected live cells)                        
+Paste                 | Ctrl + V          | Pastes the pattern stored in the clipboard                                        
+Select all            | Ctrl + A          | Selects all the cells                                                              
+Random Fill           | Ctrl + R          | Fills the board with a random seed of 25% coverage                                
+Rotate 90°            | R                 | Rotates the pattern being inserted counter-clockwise by 90°                      
+Flip vertically       | Y                 | Flips vertically the pattern being inserted                                   
+Flip horizontally     | X                 | Flips horizontally the pattern being inserted                                        
+Cursor Mode > Draw    | F2                | Allows you to add/remove cells one by one                                          
+Cursor Mode > Drag    | F3,               | Allows you to pan the view frame                                                  
+                      | Mouse wheel click |                                                                                      
+Cursor Mode > Select  | F4                | Allows you to select a group of cells                                              
+Zoom in               | Ctrl + +,         | Zooms in by 10%                                                                  
+                      | Mouse wheel up    |                                                                                  
+Zoom out              | Ctrl + -,         | Zooms out by 10%                                                                   
+                      | Mouse wheel down  |                                                                                    
+Restore zoom          | 0                 | Restores the zoom to its default value                                            
+Show grid             | Ctrl + G          | Toggles the display of the grid                                                  
+Fade effect           |                   | Toggles an effect in which the cells fade when they die (decreases the fps)       
+Dark theme            | Ctrl + D          | Toggles light/dark theme                                                          
+Color scheme          |                   | Allows you to change the color scheme independantly for light/dark mode           
+Stability detection   | Ctrl + T          | Toggles the detection of stability : stops the simulation when it becomes stable
+Increase world size   | Ctrl + PageUp     | Enlarges the world by 100 cells in width and 50 cells in height                   
+Decrease world size   | Ctrl + PageDown   | Shrinks the world by 100 cells in width and 50 cells in height                   
+Insert a pattern      | Ctrl + P          | Allows you to insert an RLE formatted pattern from the directory `patterns/`      
 Help                  | F1                | Shows this help window                                      
-About GoL Lab         |                   | Shows information relative to GoL Lab, such as the build, the logo, the license and the author  
+About GoL Lab         |                   | Shows information relative to GoL Lab, such as its version and author 
