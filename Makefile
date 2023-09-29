@@ -38,6 +38,9 @@ ifeq ($(OS), Windows_NT)
 CXXFLAGS += -mwindows
 LDLIBS += -L ./lib/ -lshlwapi
 RESFILES = ./res/my.res
+else
+	@echo "Removing the unnecessary dll files"
+	@rm -f $(EXEDIR)/*.dll
 endif
 
 
