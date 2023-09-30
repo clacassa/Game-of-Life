@@ -48,19 +48,19 @@ namespace {
 
     typedef std::vector<Coordinates> LineBuffer;
 
-    ReadingStatus line_decoding(std::string line, std::vector<Coordinates>& initial_state);
+    // Decode a line of Life 1.06 files
+    ReadingStatus decode_line(std::string line, std::vector<Coordinates>& initial_state);
     RLEWidthHeight get_rle_width_height(std::string rle_header);
     void decode_rle_body(unsigned width, unsigned height, std::string rle_body,
                          std::vector<Coordinates>& cells);
 
     void fade_update();
     unsigned neighbours(unsigned x, unsigned y);
-    void birth_test(unsigned x, unsigned y);
 
     void print_selection(unsigned i_min, unsigned i_max, unsigned y_min, unsigned y_max);
 
-    Grid grid(World::get_y_max(), std::vector<bool>(World::get_x_max()));
-    Grid updated_grid(World::get_y_max(), std::vector<bool>(World::get_x_max()));
+    Grid grid(initial_height, std::vector<bool>(initial_width));
+    Grid updated_grid(initial_height, std::vector<bool>(initial_width));
 #ifdef LIVE_ARRAY_OPTIMIZATION
     LineBuffer live_cells_buffer;
 #endif
@@ -68,6 +68,9 @@ namespace {
     std::vector<Coordinates> dead, dead2, dead3, dead4;
 
     ErrorInfo error = {OK, 0, ""};
+
+    unsigned world_width(initial_width);
+    unsigned world_height(initial_height);
 
     unsigned nb_alive(0);
 
@@ -123,7 +126,7 @@ int simulation::read_file(std::string filename) {
             ++error.line_number;
             if (line[0] == '#' || line.empty())
                 continue;
-            result = line_decoding(line, initial_state);
+            result = decode_line(line, initial_state);
             if (result != OK) {
                 error.line = line;
                 error.type = result;
@@ -132,18 +135,17 @@ int simulation::read_file(std::string filename) {
             }
         }
 
-        unsigned world_width(0);
+        unsigned new_world_width(0);
         if (x_max >= y_max*2) {
             do {
-                world_width += increment_step;
-            }while (world_width <= x_max);
+                new_world_width += increment_step;
+            }while (new_world_width <= x_max);
         }else {
             do {
-                world_width += increment_step;
-            }while (world_width <= y_max*2);
+                new_world_width += increment_step;
+            }while (new_world_width <= y_max*2);
         }
-        World::set_world_size(world_width);
-        adjust_bool_grid();
+        resize_world(new_world_width);
         new_pattern(0, 0, initial_state);
 
         return error.type;
@@ -221,8 +223,8 @@ std::vector<Coordinates> simulation::get_rle_data(std::string filename) {
 
 std::vector<Coordinates> simulation::get_live_cells_in_area(unsigned x_min, unsigned x_max,
                                                 unsigned y_min, unsigned y_max) {
-    unsigned i_min(World::get_y_max() - 1 - y_max);
-    unsigned i_max(World::get_y_max()- 1 - y_min);
+    unsigned i_min(world_height - 1 - y_max);
+    unsigned i_max(world_height - 1 - y_min);
     unsigned j_min(x_min);
     unsigned j_max(x_max);
 
@@ -232,7 +234,7 @@ std::vector<Coordinates> simulation::get_live_cells_in_area(unsigned x_min, unsi
     for (unsigned i(i_min); i <= i_max; ++i) {
         for (unsigned j(j_min); j <= j_max; ++j) {
             if (updated_grid[i][j])
-                live_cells_in_area.push_back({j, World::get_y_max() - 1 - i});
+                live_cells_in_area.push_back({j, world_height - 1 - i});
         }
     }
     return live_cells_in_area;
@@ -262,22 +264,38 @@ bool simulation::update(Mode mode) {
         }
     }
     for (auto cell : temp_buffer) {
-        grid[World::get_y_max() - 1 - cell.y][cell.x] = 1;
+        grid[world_height - 1 - cell.y][cell.x] = 1;
     }
 
     for (auto& cell : temp_buffer) {
         for (int x_offset(-1); x_offset <= 1; ++x_offset) {
             for (int y_offset(-1); y_offset <= 1; ++y_offset) {
 
-                int x_neighb(cell.x+x_offset);
-                int y_neighb(cell.y+y_offset);
+                int x_n(cell.x+x_offset);
+                int y_n(cell.y+y_offset);
 
-                if (x_neighb >= 0 && x_neighb < World::get_x_max() &&
-                    y_neighb >= 0 && y_neighb < World::get_y_max()) {
-                    if (grid[World::get_y_max()-1-y_neighb][x_neighb]
-                        && (x_offset != 0 || y_offset != 0))
+                if (x_n >= 0 && x_n < world_width &&
+                    y_n >= 0 && y_n < world_height) {
+                    if (grid[world_height - 1 - y_n][x_n] && (x_offset != 0 || y_offset != 0))
                         continue;
-                    birth_test(x_neighb, y_neighb);
+
+                    unsigned n(neighbours(x_n, y_n));
+                    if (!grid[world_height - 1 - y_n][x_n]) {
+                        if (n == 3) {
+                            simulation::set_cell(x_n, y_n);
+                            ++born_count;
+                        }
+                    }else {
+                        if (n == 2 || n == 3) {
+                            simulation::set_cell(x_n, y_n);
+                            --born_count;
+                        }else {
+                            simulation::clear_cell(x_n, y_n);
+                            if (fade_effect_enabled)
+                                dead.push_back({x_n, y_n});
+                            ++dead_count;
+                        }
+                    }
                 }
             }
         }
@@ -312,8 +330,8 @@ bool simulation::update(Mode mode) {
 }
 
 void simulation::init() {
-    for (unsigned i(0); i < grid.size(); ++i) {
-        for (unsigned j(0); j < grid[i].size(); ++j) {
+    for (unsigned i(0); i < world_height; ++i) {
+        for (unsigned j(0); j < world_width; ++j) {
             grid[i][j] = false;
             updated_grid[i][j] = false;
         }
@@ -330,55 +348,38 @@ void simulation::init() {
 }
 
 bool simulation::is_alive(unsigned x, unsigned y) {
-    return updated_grid[World::get_y_max() - 1 - y][x];
+    return updated_grid[world_height - 1 - y][x];
 }
 
 unsigned simulation::get_population() {
     return nb_alive;
 }
 
-void simulation::adjust_bool_grid() {
-    if (World::get_y_max() < grid.size()) {
-        unsigned len(grid.size());
-        for (unsigned i(World::get_y_max()); i < len; ++i) {
-            grid.pop_back();
-            updated_grid.pop_back();
-        }
-        for (unsigned i(0); i < grid.size(); ++i) {
-            unsigned len(grid[i].size());
-            for (unsigned j(World::get_x_max()); j < len; ++j) {
-                grid[i].pop_back();
-                updated_grid[i].pop_back();
-            }
-        }
-    }else {
-        unsigned len(grid.size());
-        for (unsigned i(grid.size()); i < World::get_y_max(); ++i) {
-            grid.push_back(std::vector<bool>(World::get_x_max(), false));
-            updated_grid.push_back(std::vector<bool>(World::get_x_max(), false));
-        }
-        unsigned x_len(grid[0].size());
-        for (unsigned i(0); i < len; ++i) {
-            for (unsigned j(x_len); j < World::get_x_max(); ++j) {
-                grid[i].push_back(false);
-                updated_grid[i].push_back(false);
-            }
-        }
-    }    
+void simulation::resize_world(unsigned width) {
+    grid.resize(width / 2);
+    for (auto& col : grid) {
+        col.resize(width);
+    }
+    updated_grid.resize(width / 2);
+    for (auto& col : updated_grid) {
+        col.resize(width);
+    }
 #ifdef LIVE_ARRAY_OPTIMIZATION
     live_cells_buffer.clear();
     for (unsigned i(0); i < grid.size(); ++i) {
         for (unsigned j(0); j < grid[i].size(); ++j) {
             if (updated_grid[i][j])
-                live_cells_buffer.push_back({j, World::get_y_max()-1-i});
+                live_cells_buffer.push_back({j, width / 2 - 1 - i});
         }
     }
 #endif
+    world_width = width;
+    world_height = width / 2;
 }
 
-void simulation::new_birth(unsigned x, unsigned y) {
-    if (!updated_grid[World::get_y_max() - 1 - y][x]) {
-        updated_grid[World::get_y_max() - 1 - y][x] = true;
+void simulation::set_cell(unsigned x, unsigned y) {
+    if (!updated_grid[world_height - 1 - y][x]) {
+        updated_grid[world_height - 1 - y][x] = true;
 #ifdef LIVE_ARRAY_OPTIMIZATION
         live_cells_buffer.push_back({x, y});
         nb_alive = live_cells_buffer.size();
@@ -386,9 +387,9 @@ void simulation::new_birth(unsigned x, unsigned y) {
     }
 }
 
-void simulation::new_death(unsigned x, unsigned y) {
-    if (updated_grid[World::get_y_max() - 1 - y][x]) {
-        updated_grid[World::get_y_max() - 1 - y][x] = false;
+void simulation::clear_cell(unsigned x, unsigned y) {
+    if (updated_grid[world_height - 1 - y][x]) {
+        updated_grid[world_height - 1 - y][x] = false;
 #ifdef LIVE_ARRAY_OPTIMIZATION
         for (size_t i(0); i < live_cells_buffer.size(); ++i) {
             if (live_cells_buffer[i].x == x && live_cells_buffer[i].y == y) {
@@ -403,18 +404,18 @@ void simulation::new_death(unsigned x, unsigned y) {
 
 void simulation::new_pattern(unsigned x, unsigned y, std::vector<Coordinates> pattern) {
     for (auto& e : pattern) {
-        if (x + e.x >= 0 && x + e.x <= World::get_x_max() - 1 &&
-            y + e.y >= 0 && y + e.y <= World::get_y_max() - 1) {
-            new_birth(x + e.x, y + e.y);
+        if (x + e.x >= 0 && x + e.x <= world_width - 1 &&
+            y + e.y >= 0 && y + e.y <= world_height - 1) {
+            set_cell(x + e.x, y + e.y);
         }
     }
 }
 
-void simulation::del_pattern(unsigned x, unsigned y, std::vector<Coordinates> pattern) {
+void simulation::clear_pattern(unsigned x, unsigned y, std::vector<Coordinates> pattern) {
     for (auto& e : pattern) {
-        if (e.x >= 0 && e.x <= World::get_x_max() - 1 &&
-            e.y >= 0 && e.y <= World::get_y_max() - 1) {
-            new_death(x + e.x, y + e.y);
+        if (e.x >= 0 && e.x <= world_width - 1 &&
+            e.y >= 0 && e.y <= world_height - 1) {
+            clear_cell(x + e.x, y + e.y);
         }
     }
 }
@@ -458,28 +459,11 @@ void simulation::draw_cells(unsigned color_theme) {
     for (unsigned i(0); i < updated_grid.size(); ++i) {
         for (unsigned j(0); j < updated_grid[i].size(); ++j) {
             if (updated_grid[i][j]) {
-                graphic_draw_cell(j, World::get_y_max() - i -1, color_theme);
+                graphic_draw_cell(j, world_height - i -1, color_theme);
             }
         }
     }
 #endif
-}
-
-void simulation::display() {
-    std::cout << "\n------GRID------\n";
-    for (unsigned i(0); i < grid.size(); ++i) {
-        std::cout << "\n";
-        for (unsigned j(0); j < grid[i].size(); ++j) {
-            std::cout << grid[i][j];
-        }
-    }
-    std::cout << "\n------UPDATED GRID------\n";
-    for (unsigned i(0); i < grid.size(); ++i) {
-        std::cout << "\n";
-        for (unsigned j(0); j < grid[i].size(); ++j) {
-            std::cout << updated_grid[i][j];
-        }
-    }
 }
 
 void simulation::toggle_fade_effect() {
@@ -497,11 +481,19 @@ Grid simulation::get_state() {
     return updated_grid;
 }
 
+unsigned simulation::get_width() {
+    return world_width;
+}
+
+unsigned simulation::get_height() {
+    return world_height;
+}
+
 void simulation::set_state(const Grid saved_state) {
     for (unsigned i(0); i < saved_state.size(); ++i) {
         for (unsigned j(0); j < saved_state[i].size(); ++j) {
             if (saved_state[i][j])
-                new_birth(j, World::get_y_max() - 1 - i);
+                set_cell(j, world_height - 1 - i);
         }
     }
 }
@@ -531,7 +523,7 @@ std::string message::invalid_cell_coordinate(std::string filename) {
 }
 
 namespace {
-    ReadingStatus line_decoding(std::string line, std::vector<Coordinates>& initial_state) {
+    ReadingStatus decode_line(std::string line, std::vector<Coordinates>& initial_state) {
         std::istringstream data(line);
         if (!(data >> x >> y)) {
             return INVALID_DATA;
@@ -623,26 +615,6 @@ namespace {
         dead.clear();
     }
 
-    void birth_test(unsigned x, unsigned y) {
-        unsigned n(neighbours(x, y));
-        if (!grid[World::get_y_max() - 1 - y][x]) {
-            if (n == 3) {
-                simulation::new_birth(x, y);
-                ++born_count;
-            }
-        }else {
-            if (n == 2 || n == 3) {
-                simulation::new_birth(x, y);
-                --born_count;
-            }else {
-                simulation::new_death(x, y);
-                if (fade_effect_enabled)
-                    dead.push_back({x, y});
-                ++dead_count;
-            }
-        }
-    }
-
     unsigned neighbours(unsigned x, unsigned y) {
         unsigned n(0);
 
@@ -655,9 +627,9 @@ namespace {
                 int x_neighb(x+x_offset);
                 int y_neighb(y+y_offset);
 
-                if (x_neighb >= 0 && x_neighb < World::get_x_max() &&
-                    y_neighb >= 0 && y_neighb < World::get_y_max())
-                    if (grid[World::get_y_max()-1-y_neighb][x_neighb])
+                if (x_neighb >= 0 && x_neighb < world_width &&
+                    y_neighb >= 0 && y_neighb < world_height)
+                    if (grid[world_height-1-y_neighb][x_neighb])
                         ++n;
             }
         }

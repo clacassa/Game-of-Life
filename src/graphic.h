@@ -40,6 +40,8 @@ struct Scheme {
     Color highlight;
 };
 
+constexpr float ghost_color(0.6);
+
 // -----Colors-----
 constexpr Color black({0.0, 0.0, 0.0});
 constexpr Color white({1.0, 1.0, 1.0});

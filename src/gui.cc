@@ -30,7 +30,7 @@
 #include "config.h"
 #include "prefs.h"
 
-static Frame default_frame = {-1, World::get_x_max(), -1, World::get_y_max(),
+static Frame default_frame = {-1, simulation::get_width(), -1, simulation::get_height(),
                               window_width/window_height, window_height, window_width};
 
 static void orthographic_projection(const Cairo::RefPtr<Cairo::Context>& cr,
@@ -153,7 +153,7 @@ bool MainArea::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
         adjustFrame();
         orthographic_projection(cr, frame);
 
-        graphic_draw_world(World::get_x_max(), World::get_y_max(), dark_theme_on, show_grid, default_frame.xMax-default_frame.xMin);
+        graphic_draw_world(simulation::get_width(), simulation::get_height(), dark_theme_on, show_grid, default_frame.xMax-default_frame.xMin);
         simulation::draw_cells(dark_theme_on);
 
         if (inserting_pattern) {
@@ -195,8 +195,8 @@ void MainArea::rotate_pattern() {
 }
 
 std::vector<Coordinates> MainArea::rebase_coords(std::vector<Coordinates> abs_coords) {
-    unsigned x_min(World::get_x_max());
-    unsigned y_min(World::get_y_max());
+    unsigned x_min(simulation::get_width());
+    unsigned y_min(simulation::get_height());
 
     for (auto& e : abs_coords) {
         if (e.x < x_min)
@@ -214,7 +214,7 @@ std::vector<Coordinates> MainArea::rebase_coords(std::vector<Coordinates> abs_co
 
 unsigned MainArea::pattern_width() {
     unsigned max(0);
-    unsigned min(World::get_x_max());
+    unsigned min(simulation::get_width());
 
     for (unsigned i(0); i < pattern.size(); ++i) {
         if (pattern[i].x > max)
@@ -228,7 +228,7 @@ unsigned MainArea::pattern_width() {
 
 unsigned MainArea::pattern_height() {
     unsigned max(0);
-    unsigned min(World::get_y_max());
+    unsigned min(simulation::get_height());
 
     for (unsigned i(0); i < pattern.size(); ++i) {
         if (pattern[i].y > max)
@@ -370,9 +370,9 @@ void SimulationWindow::parse_file_error(int reading_result) {
 
 void SimulationWindow::set_default_frame() {
     default_frame.xMin = -1;
-    default_frame.xMax = World::get_x_max();
+    default_frame.xMax = simulation::get_width();
     default_frame.yMin = -1;
-    default_frame.yMax = World::get_y_max();
+    default_frame.yMax = simulation::get_height();
 }
 
 void SimulationWindow::zoom_frame() {
@@ -387,8 +387,8 @@ void SimulationWindow::zoom_frame() {
         zoom_diff = 5;
 
     // Calculate the target dimensions of the frame
-    double target_width(World::get_x_max() * (zoom_diff / 100.));
-    double target_height(World::get_y_max() * (zoom_diff / 100.));
+    double target_width(simulation::get_width() * (zoom_diff / 100.));
+    double target_height(simulation::get_height() * (zoom_diff / 100.));
     double delta_x(default_frame.xMax - default_frame.xMin);
     double delta_y(default_frame.yMax - default_frame.yMin);
 
@@ -398,7 +398,7 @@ void SimulationWindow::zoom_frame() {
     double yMinNew(default_frame.yMin + (delta_y - target_height) / 2);
 
     // The four corners of the frame must stay inside the initial frame
-    if (xMaxNew > World::get_x_max()) {
+    if (xMaxNew > simulation::get_width()) {
         xMinNew += (delta_x - target_width);
         xMaxNew = default_frame.xMax;
     }
@@ -406,7 +406,7 @@ void SimulationWindow::zoom_frame() {
         xMaxNew -= delta_x - target_width;
         xMinNew = default_frame.xMin;
     }
-    if (yMaxNew > World::get_y_max()) {
+    if (yMaxNew > simulation::get_height()) {
         yMinNew += (delta_y - target_height);
         yMaxNew = default_frame.yMax;
     }
@@ -448,7 +448,7 @@ void SimulationWindow::updt_statusbar() {
     if (n_selected != 0)
         mouse_coord += " (" + std::to_string(n_selected) + " selected)";
     const Glib::ustring zoom_level("\t\t" + std::to_string(zoom) + "%\t\t");
-    const Glib::ustring dim(std::to_string(World::get_x_max()) + " x " + std::to_string(World::get_y_max()));
+    const Glib::ustring dim(std::to_string(simulation::get_width()) + " x " + std::to_string(simulation::get_height()));
     Glib::ustring status(generation + population + mouse_coord + zoom_level + dim);
     if (experiment)
         status = "Stability detection enabled\t\t" + status;
@@ -534,7 +534,6 @@ void SimulationWindow::read_settings() {
     keyFile.load_from_file(settings_filepath, Glib::KEY_FILE_KEEP_COMMENTS);
 
     dark_theme_on = keyFile.get_boolean(prefs::settings_group, prefs::dark_theme_key);
-    simulation::adjust_bool_grid();
     default_zoom = keyFile.get_uint64(prefs::preferences_group, prefs::default_zoom_key);
     zoom = default_zoom;
     show_grid = keyFile.get_boolean(prefs::preferences_group, prefs::show_grid_key);
@@ -628,7 +627,7 @@ void SimulationWindow::update_selection() {
 }
 
 void SimulationWindow::draw(unsigned x, unsigned y) {
-    simulation::new_birth(x, y);
+    simulation::set_cell(x, y);
     // Stuff might be coming soon
 }
 
@@ -647,28 +646,28 @@ void SimulationWindow::pan_frame_left(unsigned offset) {
 }
 
 void SimulationWindow::pan_frame_right(unsigned offset) {
-    if (zoom == 100 || default_frame.xMax == World::get_x_max())
+    if (zoom == 100 || default_frame.xMax == simulation::get_width())
         return;
-    if (offset <= World::get_x_max() - default_frame.xMax) {
+    if (offset <= simulation::get_width() - default_frame.xMax) {
         default_frame.xMin += offset;
         default_frame.xMax += offset;
     }else {
-        default_frame.xMin += World::get_x_max()-default_frame.xMax;
-        default_frame.xMax = World::get_x_max();
+        default_frame.xMin += simulation::get_width()-default_frame.xMax;
+        default_frame.xMax = simulation::get_width();
     }
     updt_statusbar();
     m_Area.refresh();
 }
 
 void SimulationWindow::pan_frame_up(unsigned offset) {
-    if (zoom == 100 || default_frame.yMax == World::get_y_max())
+    if (zoom == 100 || default_frame.yMax == simulation::get_height())
         return;
-    if (offset <= World::get_y_max() - default_frame.yMax) {
+    if (offset <= simulation::get_height() - default_frame.yMax) {
         default_frame.yMin += offset;
         default_frame.yMax += offset;
     }else {
-        default_frame.yMin += World::get_y_max()-default_frame.yMax;
-        default_frame.yMax = World::get_y_max();
+        default_frame.yMin += simulation::get_height()-default_frame.yMax;
+        default_frame.yMax = simulation::get_height();
     }
     updt_statusbar();
     m_Area.refresh();
@@ -866,7 +865,7 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
             int x(round((p.x*(default_frame.xMax-default_frame.xMin)/width) + default_frame.xMin));
             int y(round(default_frame.yMax - (p.y*(default_frame.yMax-default_frame.yMin)/height)));
 
-            if (x < (int)World::get_x_max() && y < (int)World::get_y_max()) {
+            if (x < (int)simulation::get_width() && y < (int)simulation::get_height()) {
                 x_mouse = x;
                 y_mouse = y;
                 switch (event->button)
@@ -888,7 +887,7 @@ bool SimulationWindow::on_button_press_event(GdkEventButton * event)
                     if (current_mode == DRAW && !simulation::is_alive(x, y)) {
                         current_drawing.prev_state_screenshot = simulation::get_state();
                         current_drawing.pattern.push_back({x, y});
-                        simulation::new_birth(x, y);
+                        simulation::set_cell(x, y);
                         file_modified();
                     }
                     break;
@@ -978,14 +977,14 @@ bool SimulationWindow::on_motion_notify_event(GdkEventMotion * event) {
         int x(round((p.x*(default_frame.xMax-default_frame.xMin)/width) + default_frame.xMin));
         int y(round(default_frame.yMax - (p.y*(default_frame.yMax-default_frame.yMin)/height)));
 
-        if (x < (int)World::get_x_max() && y < (int)World::get_y_max() && x >= 0 && y >= 0) {
+        if (x < (int)simulation::get_width() && y < (int)simulation::get_height() && x >= 0 && y >= 0) {
             x_mouse = x;
             y_mouse = y;
             switch (button_type)
             {
             case LEFT:
                 if (current_mode == DRAW && !simulation::is_alive(x, y)) {
-                    simulation::new_birth(x, y);
+                    simulation::set_cell(x, y);
                     current_drawing.pattern.push_back({x, y});
                 }
                 else if (current_mode == DRAG)
@@ -1090,11 +1089,11 @@ void SimulationWindow::on_action_open() {
             updt_statusbar();
             val = 0;
 
-            decrsizeMi->set_sensitive(World::get_x_max() != world_size_min);
-            incrsizeMi->set_sensitive(World::get_x_max() != world_size_max);
-            decrsizeMi->set_sensitive(World::get_x_max() > world_size_min);
-            incrsizeMi->set_sensitive(World::get_x_max() < world_size_max);
-            randomMi->set_sensitive(World::get_x_max() <= 300);
+            decrsizeMi->set_sensitive(simulation::get_width() != world_size_min);
+            incrsizeMi->set_sensitive(simulation::get_width() != world_size_max);
+            decrsizeMi->set_sensitive(simulation::get_width() > world_size_min);
+            incrsizeMi->set_sensitive(simulation::get_width() < world_size_max);
+            randomMi->set_sensitive(simulation::get_width() <= 300);
 
             this->set_title(simulation::remove_filepath(filename) + "  -  " + PROGRAM_NAME);
         }else
@@ -1194,7 +1193,7 @@ void SimulationWindow::on_action_clear() {
         return;
 
     if (!m_Area.get_selection().empty()) {
-        simulation::del_pattern(0, 0, m_Area.get_selection());
+        simulation::clear_pattern(0, 0, m_Area.get_selection());
         m_Area.set_selection(simulation::get_live_cells_in_area(0, 0, 0, 0));
     }
 
@@ -1217,8 +1216,8 @@ void SimulationWindow::on_action_paste() {
 
 void SimulationWindow::on_action_select_all() {
     on_action_cursor_select();
-    std::vector<Coordinates> sel_all(simulation::get_live_cells_in_area(0, World::get_x_max()-1,
-                                                                        0, World::get_y_max()-1));
+    std::vector<Coordinates> sel_all(simulation::get_live_cells_in_area(0, simulation::get_width()-1,
+                                                                        0, simulation::get_height()-1));
     n_selected = sel_all.size();
     m_Area.set_selection(sel_all);
     cutMi->set_sensitive();
@@ -1423,7 +1422,6 @@ void SimulationWindow::on_button_increase_size_clicked() {
     cmd_history[cmd_index]->execute();
 
     set_default_frame();
-    simulation::adjust_bool_grid();
     updt_statusbar();
     m_Area.refresh();
 }
@@ -1434,7 +1432,6 @@ void SimulationWindow::on_button_decrease_size_clicked() {
     cmd_history[cmd_index]->execute();
 
     set_default_frame();
-    simulation::adjust_bool_grid();
     updt_statusbar();
     m_Area.refresh();
 }
@@ -1797,7 +1794,7 @@ void SimulationWindow::instantiate_menubar_from_glade() {
     m_refBuilder->get_widget("randomMi", randomMi);
     if (!randomMi)
         g_warning("GtkMenuItem not found: randomMi");
-    randomMi->set_sensitive(World::get_x_max() <= 1000);
+    randomMi->set_sensitive(simulation::get_width() <= 1000);
 
     rotateMi = nullptr;
     m_refBuilder->get_widget("rotateMi", rotateMi);
@@ -1842,14 +1839,14 @@ void SimulationWindow::instantiate_menubar_from_glade() {
     m_refBuilder->get_widget("increasesizeMi", incrsizeMi);
     if (!incrsizeMi)
         g_warning("GtkMenuItem not found: increasesizeMi");
-    if (World::get_x_max() >= world_size_max)
+    if (simulation::get_width() >= world_size_max)
         incrsizeMi->set_sensitive(false);
 
     decrsizeMi = nullptr;
     m_refBuilder->get_widget("decreasesizeMi", decrsizeMi);
     if (!decrsizeMi)
         g_warning("GtkMenuItem not found: decreasesizeMi");
-    if (World::get_x_max() <= world_size_min)
+    if (simulation::get_width() <= world_size_min)
         decrsizeMi->set_sensitive(false);
 
     zoominMi = nullptr;

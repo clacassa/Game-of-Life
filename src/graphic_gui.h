@@ -18,8 +18,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GRAPHIC_GUI_H_INCLUDED
-#define GRAPHIC_GUI_H_INCLUDED
+#ifndef GRAPHIC_GUI_H
+#define GRAPHIC_GUI_H
 
 #include <vector>
 #include <gtkmm/drawingarea.h>

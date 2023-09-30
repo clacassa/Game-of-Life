@@ -27,7 +27,7 @@ void CutCommand::execute() {
     main_area->set_clipboard(main_area->get_selection());
     main_area->set_pattern(main_area->rebase_coords(main_area->get_clipboard()));
     if (!main_area->get_clipboard().empty()) {
-        simulation::del_pattern(0, 0, main_area->get_clipboard());
+        simulation::clear_pattern(0, 0, main_area->get_clipboard());
         main_area->set_selection(simulation::get_live_cells_in_area(0, 0, 0, 0));
     }
     cut->set_sensitive(false);
@@ -80,7 +80,7 @@ void CopyCommand::undo() {
 
 void ClearCommand::execute() {
     if (!main_area->get_selection().empty()) {
-        simulation::del_pattern(0, 0, main_area->get_selection());
+        simulation::clear_pattern(0, 0, main_area->get_selection());
         main_area->set_selection(simulation::get_live_cells_in_area(0, 0, 0, 0));
     }
 
@@ -112,11 +112,12 @@ void PasteCommand::undo() {
 
 void RandomSeedCommand::execute() {
     simulation::init();  
+    unsigned world_area(simulation::get_width()*simulation::get_height());
     unsigned rand_x, rand_y;
-    for (unsigned index(0); index < (World::get_x_max()*World::get_y_max())/4; ++index) {
-        rand_x = rand() % World::get_x_max();
-        rand_y = rand() % World::get_y_max();
-        simulation::new_birth(rand_x, rand_y);
+    for (unsigned index(0); index < world_area / 4; ++index) {
+        rand_x = rand() % simulation::get_width();
+        rand_y = rand() % simulation::get_height();
+        simulation::set_cell(rand_x, rand_y);
     }
 }
 
@@ -126,11 +127,11 @@ void RandomSeedCommand::undo() {
 }
 
 void RemoveCellCommand::execute() {
-    simulation::new_death(x, y);
+    simulation::clear_cell(x, y);
 }
 
 void RemoveCellCommand::undo() {
-    simulation::new_birth(x, y);
+    simulation::set_cell(x, y);
 }
 
 void InsertPatternCommand::execute() {
@@ -143,15 +144,15 @@ void InsertPatternCommand::undo() {
 }
 
 void EnlargeWorldCommand::execute() {
-    if (world_size_max - World::get_x_max() < increment_step) {
-        World::set_world_size(world_size_max);
+    if (world_size_max - simulation::get_width() < increment_step) {
+        simulation::resize_world(world_size_max);
     }else {
-        World::set_world_size(World::get_x_max() + increment_step);
+        simulation::resize_world(simulation::get_width() + increment_step);
     }
-    if (World::get_x_max() == world_size_max) {
+    if (simulation::get_width() == world_size_max) {
         inc->set_sensitive(false);
     }
-    if (World::get_x_max() > random_seed_max_world_width) {
+    if (simulation::get_width() > random_seed_max_world_width) {
         rand->set_sensitive(false);
     }
 
@@ -159,15 +160,15 @@ void EnlargeWorldCommand::execute() {
 }
 
 void EnlargeWorldCommand::undo() {
-    if (World::get_x_max() - world_size_min < increment_step) {
-        World::set_world_size(world_size_min);
+    if (simulation::get_width() - world_size_min < increment_step) {
+        simulation::resize_world(world_size_min);
     }else {
-        World::set_world_size(World::get_x_max() - increment_step);
+        simulation::resize_world(simulation::get_width() - increment_step);
     }
-    if (World::get_x_max() == world_size_min)  {
+    if (simulation::get_width() == world_size_min)  {
         dec->set_sensitive(false);
     }
-    if (World::get_x_max() <= random_seed_max_world_width) {
+    if (simulation::get_width() <= random_seed_max_world_width) {
         rand->set_sensitive();
     }
 
@@ -175,30 +176,30 @@ void EnlargeWorldCommand::undo() {
 }
 
 void ShrinkWorldCommand::execute() {
-    if (World::get_x_max() - world_size_min < increment_step) {
-        World::set_world_size(world_size_min);
+    if (simulation::get_width() - world_size_min < increment_step) {
+        simulation::resize_world(world_size_min);
     }else {
-        World::set_world_size(World::get_x_max() - increment_step);
+        simulation::resize_world(simulation::get_width() - increment_step);
     }
-    if (World::get_x_max() == world_size_min)  {
+    if (simulation::get_width() == world_size_min)  {
         dec->set_sensitive(false);
     }
-    if (World::get_x_max() <= random_seed_max_world_width) {
+    if (simulation::get_width() <= random_seed_max_world_width) {
         rand->set_sensitive();
     }
     inc->set_sensitive();
 }
 
 void ShrinkWorldCommand::undo() {
-    if (world_size_max - World::get_x_max() < increment_step) {
-        World::set_world_size(world_size_max);
+    if (world_size_max - simulation::get_width() < increment_step) {
+        simulation::resize_world(world_size_max);
     }else {
-        World::set_world_size(World::get_x_max() + increment_step);
+        simulation::resize_world(simulation::get_width() + increment_step);
     }
-    if (World::get_x_max() == world_size_max) {
+    if (simulation::get_width() == world_size_max) {
         inc->set_sensitive(false);
     }
-    if (World::get_x_max() > random_seed_max_world_width) {
+    if (simulation::get_width() > random_seed_max_world_width) {
         rand->set_sensitive(false);
     }
     dec->set_sensitive();

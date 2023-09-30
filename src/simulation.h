@@ -32,7 +32,9 @@
 #include "config.h"
 #include "graphic.h"
 
+
 typedef std::vector<std::vector<bool>> Grid;
+
 
 namespace simulation {
     enum Mode { NORMAL, EXPERIMENTAL };
@@ -85,36 +87,36 @@ namespace simulation {
     unsigned get_population();
 
     /**
-     * Resize the 2D vector acording to the current world dimensions.
+     * Resize the bidimensional boolean grids.
      */
-    void adjust_bool_grid();
+    void resize_world(unsigned width);
 
-    void new_birth(unsigned x, unsigned y);
-    void new_death(unsigned x, unsigned y);
+    void set_cell(unsigned x, unsigned y);
+    void clear_cell(unsigned x, unsigned y);
     void new_pattern(unsigned x, unsigned y, std::vector<Coordinates> pattern);
-    void del_pattern(unsigned x, unsigned y, std::vector<Coordinates> pattern);
+    void clear_pattern(unsigned x, unsigned y, std::vector<Coordinates> pattern);
 
     /**
      * Call a graphic function to draw the live cells.
      */
     void draw_cells(unsigned color_theme);
 
-    void display();
-
     void toggle_fade_effect();
 
+    // TODO: getters and setter might indicate a class would be welcome here
     Grid get_state();
+    unsigned get_width();
+    unsigned get_height();
+
     void set_state(const Grid);
 } /* namespace simulation */
 
+
+// Convenient functions to create consistent error/warning messages for dialogs
 namespace message {
-
     std::string file_does_not_exist(std::string filename);
-
     std::string invalid_file_format(std::string filename);
-
     std::string unusable_file_data(std::string filename);
-
     std::string invalid_cell_coordinate(std::string filename);
 } /* namespace message */
 

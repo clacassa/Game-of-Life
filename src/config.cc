@@ -30,14 +30,6 @@
 #  include <unistd.h>
 #endif
 
-unsigned World::world_x_max = reserve;
-unsigned World::world_y_max = reserve/2;
-
-void World::set_world_size(unsigned wsize) {
-    world_x_max = wsize;
-    world_y_max = world_x_max/2;
-}
-
 std::string working_dir() {
 #ifdef _WIN32
 	char path[MAX_PATH] = {0};

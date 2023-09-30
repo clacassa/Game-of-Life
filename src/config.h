@@ -32,31 +32,17 @@ struct Coordinates {
 };
 
 constexpr unsigned window_width(600);
-constexpr unsigned window_height(window_width/2);
+constexpr unsigned window_height(window_width / 2);
 
-constexpr unsigned cell_size(1);
-constexpr unsigned reserve(500);
-
+// World specifications
+constexpr unsigned initial_width(500);
+constexpr unsigned initial_height(initial_width / 2);
 constexpr unsigned world_size_max(5000);
 constexpr unsigned world_size_min(100);
+
+constexpr unsigned cell_size(1);
 constexpr unsigned increment_step(100);
-
 constexpr unsigned startup_timeout_value(20);
-constexpr unsigned idle_timeout(5);
-
-constexpr unsigned dialog_button_margin(200);
-constexpr float ghost_color(0.6);
-
-class World {
-public:
-    static void set_world_size(unsigned wsize);
-    static unsigned get_x_max() { return world_x_max; }
-    static unsigned get_y_max() { return world_y_max; }
-private:
-    static unsigned world_x_max;
-    static unsigned world_y_max;
-};
-
 
 const std::string PROGRAM_NAME("GoL Lab");
 const std::string VERSION("1.0.0");
