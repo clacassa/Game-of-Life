@@ -9,7 +9,7 @@ Copyright (C) 2022-2023 Cyprien Lacassagne
 ## Installation (Windows only)
 
 * From the installer  
-  - Download and run [the installer](https://github.com/clacassa/GoL-Lab/releases).  
+  - Download and run [the installer](https://github.com/clacassa/GoL-Lab/releases/tag/v1.0.0-beta).  
   - Just follow the installation instructions.  
 
 ## Building the application
